@@ -93,7 +93,7 @@ export default {
     }
 
     // ============================================================
-    // EDGE MVP ENGINE v2 - Production Content Detection System
+    // EDGE MVP ENGINE v3 - Production Content Detection System
     // Full Feature Parity with Python MVP
     // Pipeline: Metadata -> EPG -> OCR -> Vision (priority order)
     // ============================================================
@@ -126,6 +126,28 @@ export default {
       VISION_MAX_CONCURRENT: 2,
       VISION_QUEUE_MAX: 20,
       SCENE_HASH_THRESHOLD: 0.10
+    };
+
+    // ============================================================
+    // TMDB Genre Maps & Channel-to-Genre Detection
+    // ============================================================
+    const TMDB_GENRE_MAP = {
+      horror: 27, thriller: 53, action: 28, comedy: 35, drama: 18,
+      romance: 10749, scifi: 878, western: 37, crime: 80, documentary: 99,
+      animation: 16, family: 10751, fantasy: 14, war: 10752, history: 36,
+      music_film: 10402, mystery: 9648, adventure: 12
+    };
+
+    const CHANNEL_GENRE_MAP = {
+      movies: [28, 53, 27], // action, thriller, horror
+      sports: [], news: [], music: [10402], kids: [16, 10751], french: [28, 18]
+    };
+
+    const KEYWORD_GENRE_MAP = {
+      terror: [27], horror: [27], adrenaline: [28, 53], comedy: [35], comedia: [35],
+      romance: [10749], drama: [18], thriller: [53], western: [37], crime: [80],
+      action: [28], classic: [18], scifi: [878], science: [878], suspense: [53, 9648],
+      premiere: [28], cinema: [18], flick: [28], fear: [27]
     };
 
     // ============================================================
@@ -303,6 +325,162 @@ export default {
     }
 
     // ============================================================
+    // TMDB Genre-based Movie Discovery
+    // ============================================================
+    const tmdbGenreCache = new Map();
+
+    async function getTMDBMoviesByGenre(genreIds, page = 1) {
+      if (!genreIds || genreIds.length === 0) return [];
+
+      const cacheKey = getCacheKey('tmdb_genre', genreIds.join(','), String(page));
+      const cached = getFromCache(tmdbGenreCache, cacheKey, 30 * 60 * 1000); // 30 min cache
+      if (cached) return cached;
+
+      const tmdbKey = env.TMDB_API_KEY || '';
+      const tmdbToken = env.TMDB_ACCESS_TOKEN || '';
+      if (!tmdbKey && !tmdbToken) return [];
+
+      try {
+        const params = new URLSearchParams({
+          with_genres: genreIds.join(','),
+          sort_by: 'popularity.desc',
+          page: String(page),
+          language: 'es',
+          'vote_count.gte': '50'
+        });
+        const headers = { 'Content-Type': 'application/json' };
+        if (tmdbToken) { headers['Authorization'] = 'Bearer ' + tmdbToken; }
+        else { params.append('api_key', tmdbKey); }
+
+        const resp = await fetch(`${EDGE_CONFIG.TMDB_API_URL}/discover/movie?${params}`, {
+          headers, signal: AbortSignal.timeout(8000)
+        });
+        const data = await resp.json();
+        if (data.results && data.results.length > 0) {
+          const movies = data.results.slice(0, 20).map(r => ({
+            title: r.title || r.name || '',
+            year: (r.release_date || r.first_air_date || '').substring(0, 4),
+            overview: r.overview || '',
+            rating: r.vote_average || 0,
+            poster: r.poster_path ? `https://image.tmdb.org/t/p/w500${r.poster_path}` : null,
+            backdrop: r.backdrop_path ? `https://image.tmdb.org/t/p/w780${r.backdrop_path}` : null,
+            tmdb_id: r.id,
+            genre_ids: r.genre_ids || []
+          }));
+          setCache(tmdbGenreCache, cacheKey, movies);
+          return movies;
+        }
+      } catch (e) { /* TMDB genre discovery fail is non-critical */ }
+      return [];
+    }
+
+    // ============================================================
+    // TMDB Trending Content
+    // ============================================================
+    const tmdbTrendingCache = new Map();
+
+    async function getTMDBTrending(type = 'movie', window = 'week') {
+      const cacheKey = getCacheKey('tmdb_trending', type, window);
+      const cached = getFromCache(tmdbTrendingCache, cacheKey, 60 * 60 * 1000); // 1 hour cache
+      if (cached) return cached;
+
+      const tmdbKey = env.TMDB_API_KEY || '';
+      const tmdbToken = env.TMDB_ACCESS_TOKEN || '';
+      if (!tmdbKey && !tmdbToken) return [];
+
+      try {
+        const params = new URLSearchParams({ language: 'es' });
+        const headers = { 'Content-Type': 'application/json' };
+        if (tmdbToken) { headers['Authorization'] = 'Bearer ' + tmdbToken; }
+        else { params.append('api_key', tmdbKey); }
+
+        const resp = await fetch(`${EDGE_CONFIG.TMDB_API_URL}/trending/${type}/${window}?${params}`, {
+          headers, signal: AbortSignal.timeout(8000)
+        });
+        const data = await resp.json();
+        if (data.results && data.results.length > 0) {
+          const items = data.results.slice(0, 20).map(r => ({
+            title: r.title || r.name || '',
+            year: (r.release_date || r.first_air_date || '').substring(0, 4),
+            overview: r.overview || '',
+            rating: r.vote_average || 0,
+            poster: r.poster_path ? `https://image.tmdb.org/t/p/w500${r.poster_path}` : null,
+            backdrop: r.backdrop_path ? `https://image.tmdb.org/t/p/w780${r.backdrop_path}` : null,
+            tmdb_id: r.id,
+            media_type: r.media_type || type,
+            genre_ids: r.genre_ids || []
+          }));
+          setCache(tmdbTrendingCache, cacheKey, items);
+          return items;
+        }
+      } catch (e) { /* TMDB trending fail is non-critical */ }
+      return [];
+    }
+
+    // ============================================================
+    // Channel-to-Genre Detection (maps channel name → TMDB genres → movie candidates)
+    // ============================================================
+    async function detectFromTMDBGenre(channelName, category) {
+      if (!channelName) return null;
+
+      const nameLower = channelName.toLowerCase();
+
+      // Step 1: Try keyword-based genre detection from channel name
+      let detectedGenreIds = [];
+      for (const [keyword, genreIds] of Object.entries(KEYWORD_GENRE_MAP)) {
+        if (nameLower.includes(keyword)) {
+          detectedGenreIds = [...detectedGenreIds, ...genreIds];
+        }
+      }
+
+      // Step 2: Fall back to category-based genres
+      if (detectedGenreIds.length === 0 && category && CHANNEL_GENRE_MAP[category]) {
+        detectedGenreIds = [...CHANNEL_GENRE_MAP[category]];
+      }
+
+      // Remove duplicates
+      detectedGenreIds = [...new Set(detectedGenreIds)];
+
+      if (detectedGenreIds.length === 0) return null;
+
+      // Step 3: Query TMDB for movies in those genres
+      const movies = await getTMDBMoviesByGenre(detectedGenreIds);
+      if (!movies || movies.length === 0) return null;
+
+      // Step 4: Build detection result with candidates
+      const topCandidate = movies[0];
+      const candidates = movies.slice(0, 5).map(m => ({
+        title: m.title,
+        year: m.year,
+        poster: m.poster,
+        rating: m.rating,
+        tmdb_id: m.tmdb_id
+      }));
+
+      // Determine inferred genre labels from detected IDs
+      const genreLabels = [];
+      for (const [label, id] of Object.entries(TMDB_GENRE_MAP)) {
+        if (detectedGenreIds.includes(id)) genreLabels.push(label);
+      }
+
+      return {
+        title: topCandidate.title,
+        type: 'movie',
+        confidence: 0.50, // Low confidence since it's genre-based, not exact
+        source: 'tmdb_genre',
+        year: topCandidate.year,
+        genre: genreLabels,
+        poster: topCandidate.poster,
+        backdrop: topCandidate.backdrop,
+        overview: topCandidate.overview,
+        rating: topCandidate.rating,
+        tmdb_id: topCandidate.tmdb_id,
+        candidates,
+        genre_ids: detectedGenreIds
+      };
+    }
+
+    // ============================================================
     // EPG Detection Pipeline
     // ============================================================
     async function detectFromEPG(channelId, channelName) {
@@ -319,10 +497,23 @@ export default {
     // ============================================================
     // Vision-based Detection using Mistral Pixtral
     // ============================================================
-    async function detectFromVision(frameB64, mistralKey) {
+    async function detectFromVision(frameB64, mistralKey, channelName = '', category = '') {
       if (!mistralKey || !frameB64) return null;
       return enqueueVision(async () => {
         try {
+          const promptText = `Eres un experto identificador de contenido en TV IPTV. Canal: "${channelName}" (${category}).
+
+Analiza esta captura de pantalla del canal. Responde SOLO con JSON valido:
+{"title":"titulo exacto","type":"movie|series|sports|music|kids|news|unknown","confidence":0.0-1.0,"year":"ano","genre":["genero1"],"alternatives":[{"title":"...","confidence":0.0}]}
+
+REGLAS CRITICAS:
+- Si ves una escena de pelicula, identifica la PELICULA ESPECIFICA (titulo real en ingles si lo conoces)
+- Presta atencion a: actores reconocibles, escenas iconicas, logos de estudio, texto en pantalla
+- Si es ciencia ficcion/terror con naves o alienigenas, piensa en: Alien, Aliens, Prometheus, The Thing, Event Horizon, Life, Species, etc.
+- Si no estas 100% seguro del titulo, pon confidence < 0.7 y agrega alternatives
+- Si ves un logo de canal de peliculas, intenta identificar la pelicula por la escena
+- Si no reconoces nada, responde: {"title":"","type":"unknown","confidence":0}`;
+
           const resp = await fetch('https://api.mistral.ai/v1/chat/completions', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${mistralKey}` },
@@ -332,12 +523,12 @@ export default {
               messages: [{
                 role: 'user',
                 content: [
-                  { type: 'text', text: `Eres un identificador de contenido para TV IPTV. Analiza esta imagen del canal y responde SOLO con JSON valido:\n{"title":"titulo exacto de la pelicula/serie/programa","type":"movie|series|sports|music|kids|news|unknown","confidence":0.0-1.0,"year":"ano si lo sabes","genre":["genero1","genero2"]}\n\nReglas:\n- Si reconoces una pelicula o serie especifica, pon el titulo real\n- Si ves un logo de canal, usa el nombre del programa que esta emitiendo\n- Si no estas seguro, confidence < 0.5\n- Si no reconoces nada, responde: {"title":"","type":"unknown","confidence":0}` },
+                  { type: 'text', text: promptText },
                   { type: 'image_url', image_url: `data:image/jpeg;base64,${frameB64}` }
                 ]
               }],
               temperature: 0.15,
-              max_tokens: 150
+              max_tokens: 300
             })
           });
           const data = await resp.json();
@@ -369,7 +560,7 @@ export default {
     }
 
     // ============================================================
-    // Full Analysis Pipeline: Metadata -> EPG -> Vision
+    // Full Analysis Pipeline: Metadata -> EPG -> TMDB Genre -> Vision
     // ============================================================
     async function analyzeChannel(channelId, category, frameB64, metadata) {
       const priority = EDGE_CONFIG.CHANNEL_PRIORITY[category] || EDGE_CONFIG.CHANNEL_PRIORITY.default;
@@ -404,13 +595,24 @@ export default {
         }
       }
 
+      // 2.5. TMDB Genre Detection (free, provides candidates for movie channels)
+      if ((!detection || detection.confidence < EDGE_CONFIG.CONFIDENCE.now_playing) && metadata?.title) {
+        const tmdbGenreResult = await detectFromTMDBGenre(metadata.title, category || 'default');
+        if (tmdbGenreResult) {
+          if (!detection || tmdbGenreResult.candidates?.length > 0) {
+            detection = tmdbGenreResult;
+            source = 'tmdb_genre';
+          }
+        }
+      }
+
       // 3. Vision detection (costly, accurate for movies/sports)
       // Only if scene has changed and budget allows
       if (frameB64 && priority.vision && canUseVision()) {
         const sceneChanged = hasSceneChanged(channelId, frameHash);
         if (sceneChanged || !detection || detection.confidence < EDGE_CONFIG.CONFIDENCE.now_playing) {
           const mistralKey = env.MISTRAL_API || env.MISTRAL_API_KEY || '';
-          const visionResult = await detectFromVision(frameB64, mistralKey);
+          const visionResult = await detectFromVision(frameB64, mistralKey, metadata?.title || '', category || 'default');
           if (visionResult) {
             recordVision();
             if (!detection || visionResult.confidence > detection.confidence) {
@@ -527,7 +729,7 @@ export default {
     // API: Detection stats
     if (url.pathname === '/api/detection-stats' && request.method === 'GET') {
       resetCostIfNeeded();
-      const sources = { metadata: 0, epg: 0, vision: 0, unknown: 0 };
+      const sources = { metadata: 0, epg: 0, vision: 0, tmdb_genre: 0, manual: 0, unknown: 0 };
       for (const [, entry] of detectionCache) {
         if (entry.data?.source) sources[entry.data.source] = (sources[entry.data.source] || 0) + 1;
         else sources.unknown++;
@@ -553,6 +755,109 @@ export default {
         });
         const data = await resp.json();
         return new Response(JSON.stringify(data), { status: resp.status, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+      } catch (e) {
+        return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+      }
+    }
+
+    // ============================================================
+    // API: TMDB Genre-based movie discovery
+    // ============================================================
+    if (url.pathname === '/api/tmdb-genre' && request.method === 'GET') {
+      const genreIdsParam = url.searchParams.get('genreIds');
+      const page = parseInt(url.searchParams.get('page') || '1', 10);
+      if (!genreIdsParam) return new Response(JSON.stringify({ error: 'genreIds required (comma-separated)' }), { status: 400, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+      const genreIds = genreIdsParam.split(',').map(id => parseInt(id.trim(), 10)).filter(id => !isNaN(id));
+      if (genreIds.length === 0) return new Response(JSON.stringify({ error: 'No valid genre IDs provided' }), { status: 400, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+      const movies = await getTMDBMoviesByGenre(genreIds, page);
+      return new Response(JSON.stringify({ genreIds, page, results: movies }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'public, max-age=1800' } });
+    }
+
+    // ============================================================
+    // API: TMDB Trending content
+    // ============================================================
+    if (url.pathname === '/api/tmdb-trending' && request.method === 'GET') {
+      const type = url.searchParams.get('type') || 'movie';
+      const window_ = url.searchParams.get('window') || 'week';
+      if (!['movie', 'tv', 'all'].includes(type)) return new Response(JSON.stringify({ error: 'type must be movie, tv, or all' }), { status: 400, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+      if (!['day', 'week'].includes(window_)) return new Response(JSON.stringify({ error: 'window must be day or week' }), { status: 400, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+      const items = await getTMDBTrending(type, window_);
+      return new Response(JSON.stringify({ type, window: window_, results: items }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'public, max-age=3600' } });
+    }
+
+    // ============================================================
+    // API: Engine Status
+    // ============================================================
+    if (url.pathname === '/api/engine-status' && request.method === 'GET') {
+      const tmdbConfigured = !!(env.TMDB_API_KEY || env.TMDB_ACCESS_TOKEN);
+      const mistralConfigured = !!(env.MISTRAL_API || env.MISTRAL_API_KEY);
+      return new Response(JSON.stringify({
+        version: 'v3',
+        tmdb: tmdbConfigured,
+        mistral: mistralConfigured,
+        features: [
+          'metadata_detection',
+          'epg_detection',
+          'tmdb_genre_detection',
+          'tmdb_poster_lookup',
+          'tmdb_trending',
+          'vision_detection',
+          'manual_identification',
+          'scene_change_detection',
+          'batch_detection'
+        ].filter(f => {
+          if (f === 'vision_detection') return mistralConfigured;
+          if (f === 'tmdb_poster_lookup' || f === 'tmdb_genre_detection' || f === 'tmdb_trending') return tmdbConfigured;
+          return true;
+        }),
+        budget: { daily: EDGE_CONFIG.DAILY_BUDGET, spent: costState.spent.toFixed(4), remaining: Math.max(0, EDGE_CONFIG.DAILY_BUDGET - costState.spent).toFixed(4) },
+        caches: { detections: detectionCache.size, posters: posterCache.size, epg: epgCache.size, genres: tmdbGenreCache.size, trending: tmdbTrendingCache.size, channels: channelStates.size }
+      }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+    }
+
+    // ============================================================
+    // API: Manual Identification
+    // ============================================================
+    const manualIdCache = new Map();
+
+    if (url.pathname === '/api/identify' && request.method === 'POST') {
+      try {
+        const body = await request.json();
+        const { channelId, channelName, category, title, type, year } = body;
+        if (!channelId || !title) return new Response(JSON.stringify({ error: 'channelId and title required' }), { status: 400, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+
+        // Build manual detection result with high confidence
+        const manualDetection = {
+          title,
+          type: type || 'movie',
+          confidence: 0.95,
+          source: 'manual',
+          year: year || null,
+          genre: [],
+          channelId,
+          channelName: channelName || '',
+          category: category || 'default',
+          timestamp: Date.now(),
+          manuallyIdentified: true
+        };
+
+        // Enrich with TMDB poster data if available
+        const tmdbData = await getPosterFromTMDB(title, type || 'movie', year);
+        if (tmdbData) {
+          if (tmdbData.poster) manualDetection.poster = tmdbData.poster;
+          if (tmdbData.backdrop) manualDetection.backdrop = tmdbData.backdrop;
+          if (tmdbData.overview) manualDetection.overview = tmdbData.overview;
+          if (tmdbData.rating) manualDetection.rating = tmdbData.rating;
+          if (tmdbData.year && !manualDetection.year) manualDetection.year = tmdbData.year;
+          if (tmdbData.tmdb_id) manualDetection.tmdb_id = tmdbData.tmdb_id;
+        }
+
+        // Cache the manual detection
+        const cacheKey = getCacheKey('detect', channelId);
+        setCache(detectionCache, cacheKey, manualDetection);
+        updateChannelState(channelId, manualDetection, null, 'manual');
+
+        return new Response(JSON.stringify(manualDetection), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-cache' } });
       } catch (e) {
         return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
       }
@@ -840,7 +1145,7 @@ footer .f-stats .stat strong{color:var(--white);font-family:var(--font-display)}
 <div class="main-layout"><main class="main-content"><section id="continue-section" style="display:none"><h2 class="section-title"><span class="st-bar"></span>Continue Watching<span class="st-badge" id="cw-count">0</span></h2><div class="cw-scroll" id="cw-scroll"></div></section><section id="channels-section"><h2 class="section-title"><span class="st-bar"></span>Canales en Vivo<span class="st-count" id="ch-count"></span></h2><div class="cat-filter" id="cat-filter"></div><div class="channels-grid" id="channels-grid"></div></section><section id="upcoming-section" style="margin-top:40px"><h2 class="section-title"><span class="st-bar"></span>Coming Up</h2><div class="upcoming-scroll" id="upcoming-scroll"></div></section></main><aside class="sidebar"><div class="sidebar-section"><div class="sidebar-toggle" id="on-air-toggle"><h3><i class="fas fa-broadcast-tower"></i>En Vivo Ahora</h3><i class="fas fa-chevron-down chevron"></i></div><div class="sidebar-body" id="on-air-body"></div></div><div class="sidebar-section"><div class="sidebar-toggle" id="trending-toggle"><h3><i class="fas fa-fire"></i>Tendencias</h3><i class="fas fa-chevron-down chevron"></i></div><div class="sidebar-body" id="trending-body"></div></div><div class="sidebar-section"><div class="sidebar-toggle" id="mistral-toggle"><h3><i class="fas fa-robot"></i>Asistente IA</h3><i class="fas fa-chevron-down chevron"></i></div><div class="sidebar-body" id="mistral-body"><div class="mp-chat"><div class="mp-msg" id="mistral-msg">Preguntame sobre canales!</div><div class="mp-input-wrap"><input class="mp-input" id="mistral-input" placeholder="Pregunta sobre canales..."><button class="mp-send" id="mistral-send"><i class="fas fa-paper-plane"></i></button></div></div></div></div></aside></div>
 <div id="player-modal"><div class="player-wrap"><button class="player-close" id="player-close"><i class="fas fa-times"></i></button><video id="hls-video" muted playsinline></video><div class="player-spinner" id="player-spinner"><div class="spinner-ring"></div></div><div class="buffering-overlay" id="buffering-overlay"><div class="buffer-pulse"></div></div><div class="offline-overlay" id="offline-overlay"><i class="fas fa-signal off-icon"></i><div class="off-text">CANAL OFFLINE</div><div class="off-hint">Este canal puede estar bloqueado. Prueba otro o usa VPN.</div><button class="btn-retry" id="btn-retry"><i class="fas fa-redo"></i> Reintentar</button><button class="btn-switch" id="btn-switch"><i class="fas fa-exchange-alt"></i> Siguiente Canal</button></div><div class="player-now-playing" id="player-now-playing" style="display:none;position:relative;overflow:hidden"><div class="pnp-backdrop" id="pnp-backdrop"></div><img class="pnp-poster" id="pnp-poster" src="" alt=""><div class="pnp-info"><div class="pnp-title" id="pnp-title">-</div><div class="pnp-meta"><span class="pnp-type" id="pnp-type">-</span><span class="pnp-year" id="pnp-year"></span><span class="pnp-rating" id="pnp-rating"></span><span class="pnp-confidence" id="pnp-confidence"></span></div><div class="pnp-overview" id="pnp-overview"></div></div></div><div class="player-bar"><button id="play-pause"><i class="fas fa-play"></i></button><button id="vol-btn"><i class="fas fa-volume-mute"></i></button><input type="range" id="vol-slider" min="0" max="100" value="0" class="vol-slider"><span class="p-title" id="player-title">-</span><span class="p-quality" id="quality-indicator">HD</span><span class="p-status connecting" id="player-status">CONNECTING</span><button id="detect-btn" title="Detect content"><i class="fas fa-magic"></i></button><button id="audio-btn"><i class="fas fa-headphones"></i></button><button id="fullscreen-btn"><i class="fas fa-expand"></i></button></div></div></div>
 <div class="toast" id="toast"></div>
-<footer><div class="f-brand">EDGE <span>v8.0</span> &mdash; IPTV 100% Gratis</div><div class="f-stats"><div class="stat"><strong id="stat-ch">211</strong> canales</div><div class="stat"><strong id="stat-hd">211</strong> HD</div><div class="stat"><strong>5</strong> categorias</div><div class="stat"><strong id="stat-detect">0</strong> detectados</div></div></footer>
+<footer><div class="f-brand">EDGE <span>v9.0</span> &mdash; IPTV 100% Gratis</div><div class="f-stats"><div class="stat"><strong id="stat-ch">211</strong> canales</div><div class="stat"><strong id="stat-hd">211</strong> HD</div><div class="stat"><strong>5</strong> categorias</div><div class="stat"><strong id="stat-detect">0</strong> detectados</div></div></footer>
 <script>
 (function(){function k(){var s=document.getElementById('splash');if(s)s.classList.add('hide');}setTimeout(k,2500);setTimeout(k,3500);setTimeout(k,5000);document.addEventListener('DOMContentLoaded',function(){setTimeout(k,800);});window.addEventListener('load',function(){setTimeout(k,300);});window.onerror=function(){k();return true;};})();
 <\/script>
@@ -1500,7 +1805,7 @@ try{initApp();}catch(e){console.error('BOOT:',e);killSplash();}
 })();
 
 // ============================================================
-// EDGE MVP ENGINE v2 - Frontend Detection System
+// EDGE MVP ENGINE v3 - Frontend Detection System
 // Scene Change Detection + Priority Intervals + Batch Detect + Source Attribution
 // ============================================================
 (function(){
