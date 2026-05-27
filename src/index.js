@@ -1,5 +1,29 @@
 export default {
-  async fetch(request) {
+  async fetch(request, env) {
+    // ===== MISTRAL AI PROXY ROUTE =====
+    const url = new URL(request.url);
+    if (url.pathname === '/api/ai' && request.method === 'POST') {
+      try {
+        const body = await request.json();
+        const apiKey = env.MISTRAL_API_KEY || '';
+        if (!apiKey) {
+          return new Response(JSON.stringify({error:'MISTRAL_API_KEY not configured. Add it in Cloudflare Dashboard > Workers > Settings > Variables.'}), {status:500, headers:{'Content-Type':'application/json','Access-Control-Allow-Origin':'*'}});
+        }
+        const resp = await fetch('https://api.mistral.ai/v1/chat/completions', {
+          method:'POST',
+          headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},
+          body:JSON.stringify({model:'mistral-small',messages:body.messages||[],max_tokens:body.max_tokens||150})
+        });
+        const data = await resp.json();
+        return new Response(JSON.stringify(data), {status:resp.status, headers:{'Content-Type':'application/json','Access-Control-Allow-Origin':'*'}});
+      } catch(e) {
+        return new Response(JSON.stringify({error:e.message}), {status:500, headers:{'Content-Type':'application/json','Access-Control-Allow-Origin':'*'}});
+      }
+    }
+    if (url.pathname === '/api/ai' && request.method === 'OPTIONS') {
+      return new Response(null, {headers:{'Access-Control-Allow-Origin':'*','Access-Control-Allow-Methods':'POST,OPTIONS','Access-Control-Allow-Headers':'Content-Type'}});
+    }
+
     const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -483,43 +507,16 @@ var CATS=[
 {id:"documentary",label:"Docs",icon:"fa-book"},
 {id:"international",label:"World",icon:"fa-earth-americas"}
 ];
-var CAT_IMG={
-news:'/logos/cat-news.png',
-sports:'/logos/cat-sports.png',
-movies:'/logos/cat-movies.png',
-entertainment:'/logos/cat-entertainment.png',
-music:'/logos/cat-music.png',
-kids:'/logos/cat-kids.png',
-documentary:'/logos/cat-documentary.png',
-international:'/logos/cat-international.png'
-};
-var CH_LOGO={
-1:'/logos/ch01-aljazeera-en.png',2:'/logos/ch02-aljazeera-ar.png',3:'/logos/ch03-france24-en.png',
-4:'/logos/ch04-france24-fr.png',5:'/logos/ch05-france24-ar.png',6:'/logos/ch06-dw-en.png',
-7:'/logos/ch07-dw-es.png',8:'/logos/ch08-abc-news.png',9:'/logos/ch09-abc-stream.png',
-10:'/logos/ch10-africa24.png',11:'/logos/ch11-euronews.png',12:'/logos/ch12-court-tv.png',
-13:'/logos/ch13-accdn.png',14:'/logos/ch14-cbs-golazo.png',15:'/logos/ch15-fifa-en.png',
-16:'/logos/ch16-fifa-es.png',17:'/logos/ch17-fubo-sports.png',18:'/logos/ch18-billiard.png',
-19:'/logos/ch19-ftf-sports.png',20:'/logos/ch20-fanduel-racing.png',21:'/logos/ch21-fanduel-tv.png',
-22:'/logos/ch22-dazn-combat.png',23:'/logos/ch23-glory-kick.png',24:'/logos/ch24-speed-sport.png',
-25:'/logos/ch25-artflix.png',26:'/logos/ch26-dust.png',27:'/logos/ch27-70s-cinema.png',
-28:'/logos/ch28-80s-rewind.png',29:'/logos/ch29-90s-throwback.png',30:'/logos/ch30-free-movies.png',
-31:'/logos/ch31-30a-classic.png',32:'/logos/ch32-rakuten-action.png',33:'/logos/ch33-rakuten-uk.png',
-34:'/logos/ch34-charge.png',35:'/logos/ch35-amc-reality.png',36:'/logos/ch36-allblk.png',
-37:'/logos/ch37-bounce-xl.png',38:'/logos/ch38-buzzr.png',39:'/logos/ch39-asiancrush.png',
-40:'/logos/ch40-afroland.png',41:'/logos/ch41-30a-tv.png',42:'/logos/ch42-forensic.png',
-43:'/logos/ch43-cmc.png',44:'/logos/ch44-30a-music.png',45:'/logos/ch45-dance-tv.png',
-46:'/logos/ch46-dance-edm.png',47:'/logos/ch47-dance-techno.png',48:'/logos/ch48-clubbing.png',
-49:'/logos/ch49-stingray-rock.png',50:'/logos/ch50-stingray-hits.png',51:'/logos/ch51-bbc-kids.png',
-52:'/logos/ch52-baby-shark.png',53:'/logos/ch53-brat-tv.png',54:'/logos/ch54-camp-spoopy.png',
-55:'/logos/ch55-avatar.png',56:'/logos/ch56-anime-vision.png',57:'/logos/ch57-docplus.png',
-58:'/logos/ch58-docurama.png',59:'/logos/ch59-dangertv.png',60:'/logos/ch60-curiosity.png',
-61:'/logos/ch61-4k-travel.png',62:'/logos/ch62-5min-craft.png',63:'/logos/ch63-bloomberg.png',
-64:'/logos/ch64-bbc-earth.png',65:'/logos/ch65-bbc-topgear.png',66:'/logos/ch66-alhurra.png',
-67:'/logos/ch67-abc5.png',68:'/logos/ch68-accuweather.png',69:'/logos/ch69-aj-mubasher.png',
-70:'/logos/ch70-france24-es.png',71:'/logos/ch71-africanews.png',72:'/logos/ch72-america-voice.png',
-73:'/logos/ch73-aci-sport.png',74:'/logos/ch74-fite.png',75:'/logos/ch75-sport-italia.png',
-76:'/logos/ch76-africa24sport.png'
+// Logo references removed - using CSS gradients with channel colors instead
+var CAT_GRAD={
+news:'linear-gradient(135deg,#1a237e 0%,#0d47a1 50%,#01579b 100%)',
+sports:'linear-gradient(135deg,#1b5e20 0%,#2e7d32 50%,#388e3c 100%)',
+movies:'linear-gradient(135deg,#311b92 0%,#4a148c 50%,#6a1b9a 100%)',
+entertainment:'linear-gradient(135deg,#bf360c 0%,#d84315 50%,#e65100 100%)',
+music:'linear-gradient(135deg,#880e4f 0%,#ad1457 50%,#c2185b 100%)',
+kids:'linear-gradient(135deg,#e65100 0%,#f57c00 50%,#ff9800 100%)',
+documentary:'linear-gradient(135deg,#263238 0%,#37474f 50%,#455a64 100%)',
+international:'linear-gradient(135deg,#004d40 0%,#00695c 50%,#00796b 100%)'
 };
 var CAT_ICON={
 news:'fa-newspaper',
@@ -557,7 +554,7 @@ document.addEventListener('click',function onFirstClick(){
 // ===== STATE =====
 var curFilter='all',curCh=null,hlsInst=null,heroIdx=0,heroIv=null;
 var retryCount=0,MAX_RETRIES=3,playerRetryTimer=null;
-var MISTRAL_KEY='YOUR_MISTRAL_API_KEY';
+// Mistral AI now uses server-side proxy at /api/ai — no client-side key needed
 
 // ===== SPLASH INIT (2.5s then hide) =====
 setTimeout(function(){
@@ -616,11 +613,11 @@ function renderGrid(){
   var h='';
   for(var i=0;i<list.length;i++){
     var ch=list[i];
-    var catImg=CH_LOGO[ch.id]||CAT_IMG[ch.c]||CAT_IMG.news;
+    var catGrad=CAT_GRAD[ch.c]||CAT_GRAD.news;
     var catIcon=CAT_ICON[ch.c]||'fa-tv';
     h+='<div class="ch-card" data-id="'+ch.id+'">'+
       '<div class="ch-thumb">'+
-        '<div class="ch-thumb-img" style="background-image:url(\''+catImg+'\');background-color:'+ch.clr+'"></div>'+
+        '<div class="ch-thumb-img" style="background:'+catGrad+'"></div>'+
         '<div class="ch-thumb-overlay"></div>'+
         '<div class="ch-thumb-icon"><i class="fas '+catIcon+'"></i></div>'+
         '<div class="ch-thumb-label">'+esc(ch.n)+'</div>'+
@@ -668,7 +665,7 @@ function renderHero(){
     var ch=featured[i];
     var isActive=i===0?'active':'';
     sh+='<div class="hero-slide '+isActive+'" data-idx="'+i+'">'+
-      '<div class="slide-bg" style="background-image:url(\''+(CH_LOGO[ch.id]||CAT_IMG[ch.c]||CAT_IMG.news)+'\');background-size:cover;background-position:center;background-color:'+ch.clr+'"></div>'+
+      '<div class="slide-bg" style="background:'+(CAT_GRAD[ch.c]||CAT_GRAD.news)+'"></div>'+
       '<div class="slide-grad"></div>'+
       '<div class="slide-content">'+
         '<div class="slide-label">NOW STREAMING</div>'+
@@ -921,11 +918,11 @@ function doSearch(q){
   var h='';
   for(var i=0;i<results.length;i++){
     var ch=results[i];
-    var catImg=CH_LOGO[ch.id]||CAT_IMG[ch.c]||CAT_IMG.news;
+    var catGrad=CAT_GRAD[ch.c]||CAT_GRAD.news;
     var catIcon=CAT_ICON[ch.c]||'fa-tv';
     h+='<div class="ch-card visible" data-id="'+ch.id+'">'+
       '<div class="ch-thumb">'+
-        '<div class="ch-thumb-img" style="background-image:url(\''+catImg+'\');background-color:'+ch.clr+'"></div>'+
+        '<div class="ch-thumb-img" style="background:'+catGrad+'"></div>'+
         '<div class="ch-thumb-overlay"></div>'+
         '<div class="ch-thumb-icon"><i class="fas '+catIcon+'"></i></div>'+
         '<div class="ch-thumb-label">'+esc(ch.n)+'</div>'+
@@ -951,12 +948,20 @@ function updateStats(){
   document.getElementById('stat-hd').textContent=hdCount;
 }
 
-// ===== MISTRAL AI =====
+// ===== MISTRAL AI (calls server-side proxy at /api/ai) =====
 function askMistral(question){
   var msgEl=document.getElementById('mistral-msg');
   msgEl.textContent='Thinking...';
-  if(MISTRAL_KEY==='YOUR_MISTRAL_API_KEY'){
-    // Offline fallback: suggest channels based on keywords
+  fetch('/api/ai',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({messages:[{role:'system',content:'You are EDGE IPTV assistant. Help users find channels from our 76 free live TV channels. Be brief.'},{role:'user',content:question}],max_tokens:150})
+  }).then(function(r){return r.json();}).then(function(data){
+    if(data.choices&&data.choices[0])msgEl.textContent=data.choices[0].message.content;
+    else if(data.error)msgEl.textContent=data.error;
+    else msgEl.textContent='No response from AI.';
+  }).catch(function(){
+    // Fallback: keyword-based suggestion if API is unreachable
     var q=question.toLowerCase();
     var matches=CHANNELS.filter(function(ch){
       return ch.n.toLowerCase().indexOf(q)>=0||ch.c.indexOf(q)>=0||ch.d.toLowerCase().indexOf(q)>=0;
@@ -971,16 +976,7 @@ function askMistral(question){
     }else{
       msgEl.textContent='No matching channels found. Try searching for a topic like "news", "sports", or "music".';
     }
-    return;
-  }
-  fetch('https://api.mistral.ai/v1/chat/completions',{
-    method:'POST',
-    headers:{'Content-Type':'application/json','Authorization':'Bearer '+MISTRAL_KEY},
-    body:JSON.stringify({model:'mistral-small',messages:[{role:'system',content:'You are EDGE IPTV assistant. Help users find channels from our 76 free live TV channels. Be brief.'},{role:'user',content:question}],max_tokens:150})
-  }).then(function(r){return r.json();}).then(function(data){
-    if(data.choices&&data.choices[0])msgEl.textContent=data.choices[0].message.content;
-    else msgEl.textContent='No response from AI.';
-  }).catch(function(){msgEl.textContent='Could not reach AI. Try again.';});
+  });
 }
 
 // ===== BIND ALL EVENTS =====
