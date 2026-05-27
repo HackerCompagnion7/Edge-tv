@@ -9,3 +9,5 @@ edge_metadata.db
 temp_clone/
 export-github.js
 export.log
+check-commits.js
+fix-git-and-push.js

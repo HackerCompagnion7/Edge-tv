@@ -40,6 +40,7 @@ export default function App() {
   // Enriched Metadata
   const [enrichedMetadata, setEnrichedMetadata] = useState<NowPlayingMetadata | null>(null);
   const [metadataLoading, setMetadataLoading] = useState<boolean>(false);
+  const [isPredicting, setIsPredicting] = useState<boolean>(false);
 
   // Local History (Continue Watching)
   const [historyList, setHistoryList] = useState<IPTVChannel[]>([]);
@@ -160,6 +161,17 @@ export default function App() {
     // Handle stream proxy URL routing through server.ts proxy
     const proxiedStreamUrl = `/proxy?url=${encodeURIComponent(selectedChannel.s)}`;
 
+    const handleVideoPlaying = () => {
+      // Automatically snapshot after 2.5s once video stream content starts rendering
+      setTimeout(() => {
+        if (selectedChannel) {
+          predictWithAI(selectedChannel);
+        }
+      }, 2500);
+    };
+
+    video.addEventListener('playing', handleVideoPlaying);
+
     if (Hls.isSupported()) {
       if (hlsRef.current) {
         hlsRef.current.destroy();
@@ -228,12 +240,62 @@ export default function App() {
     }
 
     return () => {
+      video.removeEventListener('playing', handleVideoPlaying);
       if (hlsRef.current) {
         hlsRef.current.destroy();
         hlsRef.current = null;
       }
     };
   }, [selectedChannel]);
+
+  // Fetch dynamic on-the-fly AI program prediction (Mistral/Gemini satellite) with Live Frame Vision
+  const predictWithAI = async (channel: IPTVChannel) => {
+    setIsPredicting(true);
+    let imgBase64: string | null = null;
+
+    try {
+      const video = videoRef.current;
+      // Capture frame if video state indicates media layout is prepared
+      if (video && video.readyState >= 2) {
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = video.videoWidth || 640;
+          canvas.height = video.videoHeight || 360;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.65);
+            imgBase64 = dataUrl.split(',')[1];
+          }
+        } catch (canvasErr) {
+          console.warn('[AI Vision] Capturing frame canvas taints:', canvasErr);
+        }
+      }
+
+      const res = await fetch('/api/predict-channel-content', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          channelId: channel.id,
+          channelName: channel.n,
+          category: channel.c,
+          frame: imgBase64
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.title) {
+          setEnrichedMetadata(data);
+          return true;
+        }
+      }
+    } catch (e) {
+      console.warn('AI program prediction failed on sintonizador:', e);
+    } finally {
+      setIsPredicting(false);
+    }
+    return false;
+  };
 
   // Fetch TMDB program metadata
   const fetchNowPlayingMetadata = async (channel: IPTVChannel) => {
@@ -250,7 +312,14 @@ export default function App() {
         }
       }
 
-      // If no cached metadata exists, trigger server detection pipeline
+      // Try dynamic AI prediction (Mistral/Gemini) first
+      const predicted = await predictWithAI(channel);
+      if (predicted) {
+        setMetadataLoading(false);
+        return;
+      }
+
+      // If AI prediction has no API keys, fall back to standard database detection pipeline
       const detectRes = await fetch(`/api/detect`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -381,7 +450,8 @@ export default function App() {
           message: userMessage,
           channelName: selectedChannel?.n || 'Ninguno',
           category: selectedChannel?.c || 'Todos',
-          channelsList: allChannels.map(ch => ({ id: ch.id, name: ch.n, category: ch.c }))
+          channelsList: allChannels.map(ch => ({ id: ch.id, name: ch.n, category: ch.c })),
+          currentProgram: enrichedMetadata
         })
       });
 
@@ -428,9 +498,10 @@ export default function App() {
 
   // Quick preset queries for AI
   const aiPresets = [
+    '🔮 Predecir y verificar película actual con Mistral IA',
     '¿Qué canales son de esta misma categoría?',
-    'Recomienda películas recomendadas de nuestra parrilla',
-    'Dame de qué trata este canal que estoy viendo'
+    'Dame la sinopsis detallada del canal que estoy viendo',
+    'Recomienda películas recomendadas de nuestra parrilla'
   ];
 
   return (
@@ -749,10 +820,22 @@ export default function App() {
                       {enrichedMetadata?.overview ? enrichedMetadata.overview : selectedChannel.d}
                     </p>
 
-                    <span className="text-[10px] text-[#475569] font-mono mt-3 uppercase tracking-wider flex items-center gap-1.5">
-                      <span className="h-1.5 w-1.5 rounded-full bg-[#10b981]" />
-                      Fuente del Programa: {enrichedMetadata?.source ? enrichedMetadata.source.toUpperCase() : 'CANAL IPTV CONFIG'}
-                    </span>
+                    <div className="mt-3.5 flex flex-wrap items-center gap-4 border-t border-[#1e293b]/50 pt-3">
+                      <span className="text-[10px] text-[#475569] font-mono uppercase tracking-wider flex items-center gap-1.5">
+                        <span className="h-1.5 w-1.5 rounded-full bg-[#10b981]" />
+                        Fuente: {enrichedMetadata?.source ? enrichedMetadata.source.toUpperCase() : 'CANAL IPTV CONFIG'}
+                      </span>
+
+                      <button
+                        onClick={() => selectedChannel && predictWithAI(selectedChannel)}
+                        disabled={isPredicting || metadataLoading}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-red-600 to-amber-600 hover:from-red-500 hover:to-amber-500 disabled:opacity-50 text-white text-[10px] uppercase font-bold tracking-wider shadow-md hover:scale-[1.03] active:scale-95 transition-all cursor-pointer"
+                        title="Vuelve a calcular la programación en directo para este canal utilizando Mistral o Gemini"
+                      >
+                        <Sparkles className="h-3.5 w-3.5 animate-pulse text-amber-300" />
+                        {isPredicting ? 'Analizando Transmisión...' : '🔮 Verificar con IA (Mistral)'}
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
