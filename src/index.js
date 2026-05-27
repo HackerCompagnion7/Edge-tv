@@ -17,37 +17,56 @@ export default {
           }
         });
         const contentType = targetResp.headers.get('Content-Type') || '';
-        let body = await targetResp.text();
+        const isM3u8 = contentType.includes('mpegurl') || contentType.includes('mpegURL') || contentType.includes('x-mpegURL') || targetUrl.includes('.m3u8');
 
-        // Rewrite .m3u8 playlists to route segments through our proxy
-        if (contentType.includes('mpegurl') || targetUrl.includes('.m3u8')) {
-          const base = targetUrl.substring(0, targetUrl.lastIndexOf('/') + 1);
+        if (isM3u8) {
+          // TEXT content (.m3u8 playlists): read as text and rewrite URLs
+          // Use the FINAL URL after redirects for correct base resolution
+          const finalUrl = targetResp.url || targetUrl;
+          const base = finalUrl.substring(0, finalUrl.lastIndexOf('/') + 1);
+          let body = await targetResp.text();
+
           const lines = body.split('\n');
           const rewritten = lines.map(line => {
             const trimmed = line.trim();
             if (!trimmed || trimmed.startsWith('#')) {
-              // Rewrite URI attributes inside #EXT-X-KEY, #EXT-X-MEDIA etc.
-              if (trimmed.startsWith('#EXT-X-KEY:') || trimmed.startsWith('#EXT-X-MEDIA:')) {
+              // Rewrite URI= attributes in ANY tag (#EXT-X-KEY, #EXT-X-MEDIA, #EXT-X-MAP, etc.)
+              if (trimmed.includes('URI="')) {
                 return line.replace(/URI="([^"]+)"/g, (match, uri) => {
+                  // Don't rewrite URLs that already go through our proxy
+                  if (uri.includes('/proxy?url=')) return match;
                   if (uri.startsWith('http')) return 'URI="' + url.origin + '/proxy?url=' + encodeURIComponent(uri) + '"';
                   return 'URI="' + url.origin + '/proxy?url=' + encodeURIComponent(base + uri) + '"';
                 });
               }
               return line;
             }
-            // Segment URL - rewrite to proxy
+            // Segment/variant URL - rewrite to proxy
             if (trimmed.startsWith('http')) {
               return url.origin + '/proxy?url=' + encodeURIComponent(trimmed);
             }
             return url.origin + '/proxy?url=' + encodeURIComponent(base + trimmed);
           });
           body = rewritten.join('\n');
+
+          return new Response(body, {
+            status: targetResp.status,
+            headers: {
+              'Content-Type': contentType || 'application/vnd.apple.mpegurl',
+              'Access-Control-Allow-Origin': '*',
+              'Access-Control-Allow-Methods': 'GET,OPTIONS',
+              'Access-Control-Allow-Headers': '*',
+              'Cache-Control': 'no-cache'
+            }
+          });
         }
 
-        return new Response(body, {
+        // BINARY content (.ts segments, .key files, .mp4 init, etc.):
+        // Pass through raw body WITHOUT reading as text (text() corrupts binary data!)
+        return new Response(targetResp.body, {
           status: targetResp.status,
           headers: {
-            'Content-Type': contentType || 'application/vnd.apple.mpegurl',
+            'Content-Type': contentType || 'application/octet-stream',
             'Access-Control-Allow-Origin': '*',
             'Access-Control-Allow-Methods': 'GET,OPTIONS',
             'Access-Control-Allow-Headers': '*',
@@ -670,12 +689,12 @@ function startStream(origUrl){
       maxBufferSize:60*1024*1024,
       startFragPrefetch:true,
       progressive:true,
-      xhrSetup:function(xhr,url){
-        // Route ALL HLS.js requests through our CORS proxy
-        if(url&&!url.startsWith(location.origin)){
-          xhr.open('GET',location.origin+'/proxy?url='+encodeURIComponent(url),true);
-        }
-      }
+      manifestLoadingTimeOut:15000,
+      manifestLoadingMaxRetry:4,
+      levelLoadingTimeOut:15000,
+      levelLoadingMaxRetry:4,
+      fragLoadingTimeOut:15000,
+      fragLoadingMaxRetry:4
     });
     hlsInst.loadSource(proxyUrl);hlsInst.attachMedia(v);
     hlsInst.on(Hls.Events.MANIFEST_PARSED,function(){v.play().catch(function(){});hideSpinner();setStatus('live');updateQuality();});
