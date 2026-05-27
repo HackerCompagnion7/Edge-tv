@@ -1,5 +1,6 @@
 export default {
   async fetch(request, env) {
+    try {
     const url = new URL(request.url);
 
     // CORS preflight
@@ -76,7 +77,8 @@ img{max-width:100%;display:block}
 ::-webkit-scrollbar-track{background:var(--surface)}
 ::-webkit-scrollbar-thumb{background:var(--muted);border-radius:3px}
 
-#splash{position:fixed;inset:0;z-index:10000;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity 0.6s ease,visibility 0.6s ease}
+/* ===== SPLASH - BULLETPROOF ===== */
+#splash{position:fixed;inset:0;z-index:10000;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:1;visibility:visible;transition:opacity 0.6s ease,visibility 0.6s ease}
 #splash.hide{opacity:0;visibility:hidden;pointer-events:none}
 .splash-wrap{display:flex;flex-direction:column;align-items:center}
 .splash-logo-area{position:relative;overflow:hidden;padding:8px 20px}
@@ -97,6 +99,7 @@ img{max-width:100%;display:block}
 .load-bar-fill{height:100%;background:linear-gradient(90deg,var(--red),#ff4466,var(--red));border-radius:2px;animation:loadProgress 2.3s ease-in-out forwards}
 @keyframes loadProgress{0%{width:0%}25%{width:30%}50%{width:55%}75%{width:80%}100%{width:100%}}
 
+/* ===== NAVBAR ===== */
 header{position:sticky;top:0;z-index:1000;background:rgba(11,11,11,0.8);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,0.06);padding:0 32px;height:64px;display:flex;align-items:center;justify-content:space-between}
 .logo-mark{font-family:var(--font-display);font-size:22px;font-weight:900;letter-spacing:5px;color:var(--white)}
 .logo-mark span{color:var(--red)}
@@ -113,7 +116,10 @@ header nav a.active::after{content:'';position:absolute;bottom:-2px;left:0;width
 #search-box input{width:100%;background:var(--elevated);border:1px solid rgba(255,255,255,0.1);border-radius:var(--radius-input);padding:10px 14px;color:var(--white);font-size:13px;font-family:var(--font-body)}
 #search-box input:focus{border-color:rgba(255,255,255,0.25);outline:none}
 
+/* ===== HERO ===== */
 .hero{position:relative;width:100%;height:420px;overflow:hidden;background:linear-gradient(135deg,var(--surface) 0%,#1a1a1a 50%,var(--surface) 100%)}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 20% 50%,rgba(232,17,45,0.06) 0%,transparent 60%);z-index:1;pointer-events:none}
+.hero::after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 85% 40%,rgba(100,120,255,0.04) 0%,transparent 50%);z-index:1;pointer-events:none}
 .hero-slide{position:absolute;inset:0;opacity:0;transition:opacity 1.2s ease;display:flex;align-items:center}
 .hero-slide.active{opacity:1}
 .hero-slide .slide-bg{position:absolute;inset:0;background-size:cover;background-position:center;filter:brightness(0.2) saturate(1.3) blur(1px)}
@@ -140,14 +146,16 @@ header nav a.active::after{content:'';position:absolute;bottom:-2px;left:0;width
 .hero-dots span{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,0.2);cursor:pointer;transition:all var(--transition)}
 .hero-dots span.active{background:var(--white);box-shadow:0 0 10px rgba(255,255,255,0.3);width:24px;border-radius:4px}
 
+/* ===== CATEGORY CHIPS ===== */
 .cat-filter{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap}
 .cat-filter button{background:rgba(255,255,255,0.05);color:var(--gray);padding:7px 18px;border-radius:var(--radius-chip);font-size:12px;font-weight:500;transition:all var(--transition);border:1px solid rgba(255,255,255,0.08);backdrop-filter:blur(8px);display:flex;align-items:center;gap:5px}
-.cat-filter button:hover{border-color:rgba(255,255,255,0.2);color:var(--white)}
+.cat-filter button:hover{border-color:rgba(255,255,255,0.2);box-shadow:0 0 12px rgba(255,255,255,0.05);color:var(--white)}
 .cat-filter button.active{background:var(--white);color:#0b0b0b;border-color:var(--white);font-weight:600}
 
+/* ===== CHANNEL GRID ===== */
 .channels-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px}
-.ch-card{background:var(--surface);border-radius:var(--radius-card);overflow:hidden;border:1px solid rgba(255,255,255,0.04);transition:transform 240ms ease,box-shadow 240ms ease;position:relative;cursor:pointer;opacity:0;transform:translateY(10px)}
-.ch-card.visible{opacity:1;transform:translateY(0);transition:opacity 300ms ease,transform 300ms ease}
+.ch-card{background:var(--surface);border-radius:var(--radius-card);overflow:hidden;border:1px solid rgba(255,255,255,0.04);transition:transform 240ms ease,box-shadow 240ms ease,border-color 240ms ease;position:relative;cursor:pointer;opacity:0;transform:translateY(10px)}
+.ch-card.visible{opacity:1;transform:translateY(0);transition:opacity 300ms ease,transform 300ms ease,box-shadow 240ms ease,border-color 240ms ease}
 .ch-card:hover{transform:translateY(-4px) scale(1.03);border-color:rgba(255,255,255,0.1);box-shadow:var(--shadow-hover)}
 .ch-card .ch-thumb{width:100%;height:160px;position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center}
 .ch-card .ch-thumb-img{position:absolute;inset:0;background-size:cover;background-position:center;filter:brightness(0.35) saturate(1.4);transition:filter 400ms ease,transform 400ms ease}
@@ -156,11 +164,10 @@ header nav a.active::after{content:'';position:absolute;bottom:-2px;left:0;width
 .ch-card .ch-thumb-icon{position:relative;z-index:2;font-size:32px;color:rgba(255,255,255,0.12);margin-bottom:4px}
 .ch-card .ch-thumb-label{font-family:var(--font-display);font-size:11px;color:rgba(255,255,255,0.95);letter-spacing:3px;text-align:center;padding:10px;word-break:break-word;position:relative;z-index:2;text-shadow:0 2px 12px rgba(0,0,0,0.8);font-weight:700}
 .ch-card .ch-logo{position:relative;z-index:2;height:60px;width:auto;max-width:140px;object-fit:contain;filter:drop-shadow(0 2px 8px rgba(0,0,0,0.6))}
-.ch-card .ch-logo-fb{position:relative;z-index:2;width:56px;height:56px;border-radius:14px;color:#fff;font-size:22px;font-weight:900;display:none;align-items:center;justify-content:center;font-family:var(--font-display);letter-spacing:1px;filter:drop-shadow(0 2px 8px rgba(0,0,0,0.6))}
 .ch-card .ch-thumb-src{font-family:var(--font-body);font-size:9px;color:rgba(255,255,255,0.5);letter-spacing:1px;text-align:center;position:relative;z-index:2;margin-top:-4px;text-transform:uppercase}
-.ch-card .live-badge{position:absolute;top:10px;left:10px;background:var(--red);color:#fff;font-size:9px;font-weight:700;padding:2px 8px;border-radius:4px;letter-spacing:1px;animation:livePulse 2s infinite;display:flex;align-items:center;gap:4px;z-index:3}
+.ch-card .live-badge{position:absolute;top:10px;left:10px;background:var(--red);color:#fff;font-size:9px;font-weight:700;padding:2px 8px;border-radius:4px;letter-spacing:1px;animation:livePulse 2s infinite;display:flex;align-items:center;gap:4px;z-index:3;font-family:var(--font-body)}
 .ch-card .live-badge::before{content:'';width:5px;height:5px;border-radius:50%;background:#fff;animation:dotPulse 1s infinite}
-.ch-card .ch-quality{position:absolute;top:10px;right:10px;background:rgba(0,0,0,0.7);color:var(--white);font-size:9px;font-weight:600;padding:2px 8px;border-radius:3px;z-index:3;border:1px solid rgba(255,255,255,0.15)}
+.ch-card .ch-quality{position:absolute;top:10px;right:10px;background:rgba(0,0,0,0.7);color:var(--white);font-size:9px;font-weight:600;padding:2px 8px;border-radius:3px;letter-spacing:1px;z-index:3;border:1px solid rgba(255,255,255,0.15)}
 .ch-card .ch-viewers{position:absolute;bottom:10px;left:10px;font-size:10px;color:rgba(255,255,255,0.7);z-index:3;display:flex;align-items:center;gap:4px;background:rgba(0,0,0,0.5);padding:2px 8px;border-radius:3px}
 .ch-card .ch-viewers i{font-size:8px}
 .ch-card .ch-cat-tag{position:absolute;bottom:10px;right:10px;font-size:9px;color:var(--white);z-index:3;background:rgba(0,0,0,0.5);padding:2px 8px;border-radius:3px;text-transform:capitalize}
@@ -172,6 +179,7 @@ header nav a.active::after{content:'';position:absolute;bottom:-2px;left:0;width
 @keyframes livePulse{0%,100%{opacity:1}50%{opacity:0.7}}
 @keyframes dotPulse{0%,100%{opacity:1}50%{opacity:0.3}}
 
+/* ===== SKELETON CARDS ===== */
 .skeleton-card{background:var(--surface);border-radius:var(--radius-card);overflow:hidden;border:1px solid rgba(255,255,255,0.04)}
 .skeleton-thumb{width:100%;height:160px;background:linear-gradient(90deg,var(--elevated) 25%,#252525 50%,var(--elevated) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite}
 .skeleton-body{padding:12px 14px}
@@ -179,6 +187,7 @@ header nav a.active::after{content:'';position:absolute;bottom:-2px;left:0;width
 .skeleton-line.short{width:60%}
 @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
 
+/* ===== MAIN LAYOUT ===== */
 .main-layout{display:flex;gap:24px;max-width:1440px;margin:0 auto;padding:28px 24px}
 .main-content{flex:1;min-width:0}
 .sidebar{width:300px;flex-shrink:0}
@@ -186,6 +195,7 @@ header nav a.active::after{content:'';position:absolute;bottom:-2px;left:0;width
 .section-title .st-bar{width:3px;height:18px;background:linear-gradient(180deg,var(--red),rgba(232,17,45,0.3));border-radius:2px}
 .section-title .st-count{font-size:11px;color:var(--muted);font-weight:400;margin-left:auto;font-family:var(--font-body)}
 
+/* ===== SIDEBAR ===== */
 .sidebar-section{background:var(--surface);border-radius:var(--radius-card);border:1px solid rgba(255,255,255,0.04);padding:16px;margin-bottom:16px}
 .sidebar-section h3{font-family:var(--font-display);font-size:10px;letter-spacing:2px;color:var(--red);margin-bottom:14px;text-transform:uppercase;display:flex;align-items:center;gap:8px}
 .sidebar-toggle{cursor:pointer;display:flex;align-items:center;justify-content:space-between}
@@ -198,10 +208,8 @@ header nav a.active::after{content:'';position:absolute;bottom:-2px;left:0;width
 .on-air-ch .oa-dot{width:8px;height:8px;border-radius:50%;background:var(--red);flex-shrink:0;animation:dotPulse 1.5s infinite}
 .on-air-ch .oa-name{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
 .on-air-ch .oa-viewers{font-size:10px;color:var(--muted)}
-.on-air-ch .oa-logo{height:20px;width:auto;max-width:60px;object-fit:contain;flex-shrink:0}
-.on-air-ch .oa-logo-fb{height:20px;width:20px;border-radius:4px;color:#fff;font-size:9px;font-weight:900;display:none;align-items:center;justify-content:center;font-family:var(--font-display);flex-shrink:0}
-.trending-item .tr-logo{height:20px;width:auto;max-width:60px;object-fit:contain;flex-shrink:0}
-.trending-item .tr-logo-fb{width:20px;height:20px;border-radius:4px;color:#fff;font-size:9px;font-weight:900;display:none;align-items:center;justify-content:center;font-family:var(--font-display);flex-shrink:0}
+.on-air-ch .oa-logo{height:20px;width:auto;max-width:60px;object-fit:contain;flex-shrink:0;filter:drop-shadow(0 1px 4px rgba(0,0,0,0.5))}
+.trending-item .tr-logo{height:20px;width:auto;max-width:60px;object-fit:contain;flex-shrink:0;filter:drop-shadow(0 1px 4px rgba(0,0,0,0.5))}
 .trending-item{display:flex;align-items:center;gap:8px;margin-bottom:8px;cursor:pointer;padding:4px 6px;border-radius:4px;transition:background var(--transition)}
 .trending-item:hover{background:var(--elevated)}
 .trending-item .tr-rank{font-family:var(--font-display);font-size:14px;color:var(--red);min-width:20px}
@@ -215,6 +223,7 @@ header nav a.active::after{content:'';position:absolute;bottom:-2px;left:0;width
 .mp-send:hover{box-shadow:0 0 12px var(--red-glow)}
 .mp-msg{font-size:12px;color:var(--gray);line-height:1.5;padding:8px;background:var(--elevated);border-radius:6px;border-left:2px solid var(--red)}
 
+/* ===== PLAYER ===== */
 #player-modal{position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,0.95);display:none;align-items:center;justify-content:center}
 #player-modal.open{display:flex}
 .player-wrap{position:relative;width:92%;max-width:1000px;background:#000;border-radius:var(--radius-card);overflow:hidden;box-shadow:0 0 80px rgba(0,0,0,0.6)}
@@ -234,21 +243,25 @@ header nav a.active::after{content:'';position:absolute;bottom:-2px;left:0;width
 .offline-overlay .off-icon{font-size:48px;color:var(--red);opacity:0.5}
 .offline-overlay .off-text{font-family:var(--font-display);font-size:14px;color:var(--gray);letter-spacing:4px}
 .offline-overlay .off-hint{font-size:12px;color:var(--muted);max-width:300px;text-align:center;line-height:1.5}
-.offline-overlay .btn-retry{background:var(--red);color:#fff;padding:10px 24px;border-radius:var(--radius-card);font-weight:600;font-size:13px}
-.offline-overlay .btn-switch{background:var(--elevated);color:var(--gray);padding:8px 20px;border-radius:var(--radius-card);font-size:12px;border:1px solid rgba(255,255,255,0.1)}
+.offline-overlay .btn-retry{background:var(--red);color:#fff;padding:10px 24px;border-radius:var(--radius-card);font-weight:600;font-size:13px;transition:all var(--transition)}
+.offline-overlay .btn-retry:hover{box-shadow:0 0 20px var(--red-glow)}
+.offline-overlay .btn-switch{background:var(--elevated);color:var(--gray);padding:8px 20px;border-radius:var(--radius-card);font-size:12px;transition:all var(--transition);border:1px solid rgba(255,255,255,0.1)}
+.offline-overlay .btn-switch:hover{background:var(--surface);color:var(--white)}
 .player-bar{display:flex;align-items:center;gap:12px;padding:10px 16px;background:var(--surface);border-top:1px solid rgba(255,255,255,0.06)}
 .player-bar button{color:var(--muted);font-size:16px;transition:color var(--transition);padding:4px}
 .player-bar button:hover{color:var(--white)}
-.p-title{flex:1;font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.p-title{flex:1;font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:var(--font-body)}
 .p-status{font-size:10px;padding:2px 8px;border-radius:4px;font-weight:600;letter-spacing:1px}
 .p-status.live{background:var(--red);color:#fff;animation:livePulse 2s infinite}
 .p-status.connecting{background:rgba(255,193,7,0.2);color:#ffc107}
 .p-status.offline{background:var(--elevated);color:var(--muted)}
-.p-quality{font-size:10px;padding:2px 8px;border-radius:4px;background:rgba(255,255,255,0.08);color:var(--white);font-weight:600;display:none}
+.p-quality{font-size:10px;padding:2px 8px;border-radius:4px;background:rgba(255,255,255,0.08);color:var(--white);font-weight:600;letter-spacing:1px;display:none}
 .vol-slider{-webkit-appearance:none;appearance:none;width:80px;height:4px;background:var(--muted);border-radius:2px;outline:none;cursor:pointer}
-.vol-slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:12px;height:12px;border-radius:50%;background:var(--white);cursor:pointer}
+.vol-slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:12px;height:12px;border-radius:50%;background:var(--white);cursor:pointer;transition:background var(--transition)}
+.vol-slider::-webkit-slider-thumb:hover{background:var(--red)}
 .vol-slider::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:var(--white);cursor:pointer;border:none}
 
+/* ===== UPCOMING SCROLL ===== */
 .upcoming-scroll{display:flex;gap:14px;overflow-x:auto;padding-bottom:10px;scroll-snap-type:x mandatory}
 .upcoming-card{min-width:200px;background:var(--surface);border-radius:var(--radius-card);padding:14px;border:1px solid rgba(255,255,255,0.04);scroll-snap-align:start;flex-shrink:0;cursor:pointer;transition:all var(--transition)}
 .upcoming-card:hover{border-color:rgba(255,255,255,0.1);transform:translateY(-2px)}
@@ -256,6 +269,7 @@ header nav a.active::after{content:'';position:absolute;bottom:-2px;left:0;width
 .upcoming-card .uc-name{font-size:13px;font-weight:500;margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .upcoming-card .uc-time{font-family:var(--font-display);font-size:13px;color:var(--white);letter-spacing:1px}
 
+/* ===== FOOTER ===== */
 footer{background:var(--surface);border-top:1px solid rgba(255,255,255,0.04);padding:28px 24px;text-align:center;margin-top:48px}
 footer .f-brand{font-family:var(--font-display);font-size:11px;letter-spacing:4px;color:var(--muted)}
 footer .f-brand span{color:var(--red)}
@@ -263,38 +277,186 @@ footer .f-stats{display:flex;justify-content:center;gap:28px;margin-top:12px}
 footer .f-stats .stat{font-size:11px;color:var(--muted)}
 footer .f-stats .stat strong{color:var(--white);font-family:var(--font-display)}
 
+/* ===== TOAST ===== */
 .toast{position:fixed;bottom:24px;right:24px;background:var(--elevated);color:var(--white);padding:12px 20px;border-radius:var(--radius-card);font-size:13px;z-index:9999;transform:translateY(80px);opacity:0;transition:all var(--transition);border-left:3px solid var(--red);max-width:320px;box-shadow:var(--shadow)}
 .toast.show{transform:translateY(0);opacity:1}
+.toast.error{border-left-color:#ff4444}
 
+/* ===== RESPONSIVE ===== */
 @media(max-width:1024px){
-  .main-layout{flex-direction:column}.sidebar{width:100%}
+  .main-layout{flex-direction:column}
+  .sidebar{width:100%}
   .channels-grid{grid-template-columns:repeat(auto-fill,minmax(200px,1fr))}
-  .hero{height:360px}.slide-title{font-size:28px}
+  .hero{height:360px}
+  .hero-slide .slide-content{padding:0 30px}
+  .slide-title{font-size:28px}
 }
 @media(max-width:640px){
   .channels-grid{grid-template-columns:1fr 1fr}
-  header nav a span{display:none}header{padding:0 16px}
-  .hero{height:280px}.slide-title{font-size:22px}.slide-desc{display:none}
+  header nav{gap:12px}
+  header nav a span{display:none}
+  header{padding:0 16px}
+  .hero{height:280px}
+  .slide-title{font-size:22px}
+  .hero-slide .slide-content{padding:0 20px}
+  .slide-desc{display:none}
+  .sidebar-section{padding:12px}
   .vol-slider{width:50px}
 }
 </style>
 </head>
 <body>
-<div id="splash"><div class="splash-wrap"><div class="splash-logo-area"><div class="splash-logo">E<span>D</span>GE</div><div class="scanline"></div></div><div class="splash-sub">FREE HD IPTV</div><div class="load-seq"><span class="phase p1">INITIALIZING...</span><span class="phase p2">LOADING STREAMS...</span><span class="phase p3">READY</span></div><div class="load-bar-track"><div class="load-bar-fill"></div></div></div></div>
-<header><div class="logo-mark">E<span>D</span>GE</div><nav><a href="#" class="active" data-nav="home"><i class="fas fa-home"></i><span>Home</span></a><a href="#" data-nav="live"><i class="fas fa-tv"></i><span>Live</span></a><a href="#" data-nav="sports"><i class="fas fa-futbol"></i><span>Sports</span></a><a href="#" data-nav="news"><i class="fas fa-newspaper"></i><span>News</span></a></nav><div class="hdr-right"><button id="sound-toggle" title="Toggle Sound"><i class="fas fa-volume-mute"></i></button><button id="search-toggle" title="Search"><i class="fas fa-search"></i></button></div></header>
-<div id="search-box"><input type="text" id="search-input" placeholder="Search channels..."></div>
-<section class="hero" id="hero-section"><div id="hero-slides"></div><div class="hero-arrows"><button id="hero-prev"><i class="fas fa-chevron-left"></i></button><button id="hero-next"><i class="fas fa-chevron-right"></i></button><div class="hero-dots" id="hero-dots"></div></section>
-<div class="main-layout"><main class="main-content"><section id="channels-section"><h2 class="section-title"><span class="st-bar"></span>Live Channels<span class="st-count" id="ch-count"></span></h2><div class="cat-filter" id="cat-filter"></div><div class="channels-grid" id="channels-grid"></div></section><section id="upcoming-section" style="margin-top:40px"><h2 class="section-title"><span class="st-bar"></span>Coming Up</h2><div class="upcoming-scroll" id="upcoming-scroll"></div></section></main><aside class="sidebar"><div class="sidebar-section"><div class="sidebar-toggle" id="on-air-toggle"><h3><i class="fas fa-broadcast-tower"></i>On Air Now</h3><i class="fas fa-chevron-down chevron"></i></div><div class="sidebar-body" id="on-air-body"></div></div><div class="sidebar-section"><div class="sidebar-toggle" id="trending-toggle"><h3><i class="fas fa-fire"></i>Trending</h3><i class="fas fa-chevron-down chevron"></i></div><div class="sidebar-body" id="trending-body"></div></div><div class="sidebar-section"><div class="sidebar-toggle" id="mistral-toggle"><h3><i class="fas fa-robot"></i>AI Assistant</h3><i class="fas fa-chevron-down chevron"></i></div><div class="sidebar-body" id="mistral-body"><div class="mp-chat"><div class="mp-msg" id="mistral-msg">Ask me about channels!</div><div class="mp-input-wrap"><input class="mp-input" id="mistral-input" placeholder="Ask about channels..."><button class="mp-send" id="mistral-send"><i class="fas fa-paper-plane"></i></button></div></div></div></div></aside></div>
-<div id="player-modal"><div class="player-wrap"><button class="player-close" id="player-close"><i class="fas fa-times"></i></button><video id="hls-video" muted playsinline></video><div class="player-spinner" id="player-spinner"><div class="spinner-ring"></div></div><div class="buffering-overlay" id="buffering-overlay"><div class="buffer-pulse"></div></div><div class="offline-overlay" id="offline-overlay"><i class="fas fa-signal off-icon"></i><div class="off-text">STREAM OFFLINE</div><div class="off-hint">This stream may be geo-blocked. Try another channel or use a VPN.</div><button class="btn-retry" id="btn-retry"><i class="fas fa-redo"></i> Retry</button><button class="btn-switch" id="btn-switch"><i class="fas fa-exchange-alt"></i> Try Next Channel</button></div><div class="player-bar"><button id="play-pause"><i class="fas fa-play"></i></button><button id="vol-btn"><i class="fas fa-volume-mute"></i></button><input type="range" id="vol-slider" min="0" max="100" value="0" class="vol-slider"><span class="p-title" id="player-title">-</span><span class="p-quality" id="quality-indicator">HD</span><span class="p-status connecting" id="player-status">CONNECTING</span><button id="audio-btn"><i class="fas fa-headphones"></i></button><button id="fullscreen-btn"><i class="fas fa-expand"></i></button></div></div></div>
+
+<div id="splash">
+  <div class="splash-wrap">
+    <div class="splash-logo-area">
+      <div class="splash-logo">E<span>D</span>GE</div>
+      <div class="scanline"></div>
+    </div>
+    <div class="splash-sub">FREE HD IPTV</div>
+    <div class="load-seq">
+      <span class="phase p1">INITIALIZING...</span>
+      <span class="phase p2">LOADING STREAMS...</span>
+      <span class="phase p3">READY</span>
+    </div>
+    <div class="load-bar-track"><div class="load-bar-fill"></div></div>
+  </div>
+</div>
+
+<header>
+  <div class="logo-mark">E<span>D</span>GE</div>
+  <nav>
+    <a href="#" class="active" data-nav="home"><i class="fas fa-home"></i><span>Home</span></a>
+    <a href="#" data-nav="live"><i class="fas fa-tv"></i><span>Live</span></a>
+    <a href="#" data-nav="sports"><i class="fas fa-futbol"></i><span>Sports</span></a>
+    <a href="#" data-nav="news"><i class="fas fa-newspaper"></i><span>News</span></a>
+  </nav>
+  <div class="hdr-right">
+    <button id="sound-toggle" title="Toggle Sound"><i class="fas fa-volume-mute"></i></button>
+    <button id="search-toggle" title="Search"><i class="fas fa-search"></i></button>
+  </div>
+</header>
+<div id="search-box">
+  <input type="text" id="search-input" placeholder="Search channels...">
+</div>
+
+<section class="hero" id="hero-section">
+  <div id="hero-slides"></div>
+  <div class="hero-arrows">
+    <button id="hero-prev"><i class="fas fa-chevron-left"></i></button>
+    <button id="hero-next"><i class="fas fa-chevron-right"></i></button>
+  </div>
+  <div class="hero-dots" id="hero-dots"></div>
+</section>
+
+<div class="main-layout">
+  <main class="main-content">
+    <section id="channels-section">
+      <h2 class="section-title"><span class="st-bar"></span>Live Channels<span class="st-count" id="ch-count"></span></h2>
+      <div class="cat-filter" id="cat-filter"></div>
+      <div class="channels-grid" id="channels-grid"></div>
+    </section>
+    <section id="upcoming-section" style="margin-top:40px">
+      <h2 class="section-title"><span class="st-bar"></span>Coming Up</h2>
+      <div class="upcoming-scroll" id="upcoming-scroll"></div>
+    </section>
+  </main>
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-toggle" id="on-air-toggle">
+        <h3><i class="fas fa-broadcast-tower"></i>On Air Now</h3>
+        <i class="fas fa-chevron-down chevron"></i>
+      </div>
+      <div class="sidebar-body" id="on-air-body"></div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-toggle" id="trending-toggle">
+        <h3><i class="fas fa-fire"></i>Trending</h3>
+        <i class="fas fa-chevron-down chevron"></i>
+      </div>
+      <div class="sidebar-body" id="trending-body"></div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-toggle" id="mistral-toggle">
+        <h3><i class="fas fa-robot"></i>AI Assistant</h3>
+        <i class="fas fa-chevron-down chevron"></i>
+      </div>
+      <div class="sidebar-body" id="mistral-body">
+        <div class="mp-chat">
+          <div class="mp-msg" id="mistral-msg">Ask me about channels! I can recommend similar content.</div>
+          <div class="mp-input-wrap">
+            <input class="mp-input" id="mistral-input" placeholder="Ask about channels...">
+            <button class="mp-send" id="mistral-send"><i class="fas fa-paper-plane"></i></button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<div id="player-modal">
+  <div class="player-wrap">
+    <button class="player-close" id="player-close"><i class="fas fa-times"></i></button>
+    <video id="hls-video" muted playsinline></video>
+    <div class="player-spinner" id="player-spinner"><div class="spinner-ring"></div></div>
+    <div class="buffering-overlay" id="buffering-overlay"><div class="buffer-pulse"></div></div>
+    <div class="offline-overlay" id="offline-overlay">
+      <i class="fas fa-signal off-icon"></i>
+      <div class="off-text">STREAM OFFLINE</div>
+      <div class="off-hint">This stream may be geo-blocked. Try another channel or use a VPN.</div>
+      <button class="btn-retry" id="btn-retry"><i class="fas fa-redo"></i> Retry</button>
+      <button class="btn-switch" id="btn-switch"><i class="fas fa-exchange-alt"></i> Try Next Channel</button>
+    </div>
+    <div class="player-bar">
+      <button id="play-pause"><i class="fas fa-play"></i></button>
+      <button id="vol-btn"><i class="fas fa-volume-mute"></i></button>
+      <input type="range" id="vol-slider" min="0" max="100" value="0" class="vol-slider">
+      <span class="p-title" id="player-title">-</span>
+      <span class="p-quality" id="quality-indicator">HD</span>
+      <span class="p-status connecting" id="player-status">CONNECTING</span>
+      <button id="audio-btn" title="Audio"><i class="fas fa-headphones"></i></button>
+      <button id="fullscreen-btn"><i class="fas fa-expand"></i></button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
-<footer><div class="f-brand">EDGE <span>v5.0</span> &mdash; 100% Free IPTV</div><div class="f-stats"><div class="stat"><strong id="stat-ch">0</strong> channels</div><div class="stat"><strong id="stat-hd">0</strong> HD</div><div class="stat"><strong>9</strong> categories</div></div></footer>
+
+<footer>
+  <div class="f-brand">EDGE <span>v4.0</span> &mdash; 100% Free IPTV</div>
+  <div class="f-stats">
+    <div class="stat"><strong id="stat-ch">0</strong> channels</div>
+    <div class="stat"><strong id="stat-hd">0</strong> HD</div>
+    <div class="stat"><strong>9</strong> categories</div>
+  </div>
+</footer>
+
 <script>
-(function(){function k(){var s=document.getElementById('splash');if(s)s.classList.add('hide');}setTimeout(k,2500);setTimeout(k,3500);setTimeout(k,5000);document.addEventListener('DOMContentLoaded',function(){setTimeout(k,800);});window.addEventListener('load',function(){setTimeout(k,300);});window.onerror=function(){k();return true;};})();
+// ===== BULLETPROOF SPLASH DISMISS =====
+(function(){
+  function killSplash(){
+    var s=document.getElementById('splash');
+    if(s)s.classList.add('hide');
+  }
+  setTimeout(killSplash,2500);
+  setTimeout(killSplash,3500);
+  setTimeout(killSplash,5000);
+  document.addEventListener('DOMContentLoaded',function(){setTimeout(killSplash,1000);});
+  window.addEventListener('load',function(){setTimeout(killSplash,500);});
+  window.onerror=function(msg,url,line){
+    killSplash();
+    console.error('JS Error:',msg,url,line);
+    return true;
+  };
+})();
 <\/script>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.7"><\/script>
 <script>
+// ===== EDGE IPTV - Main Application =====
 (function(){
 'use strict';
+
+// ===== CHANNEL DATA WITH ORIGINAL LOGOS =====
 var CHANNELS=[
 {id:1,n:"Al Jazeera English",s:"https://live-hls-apps-aje-fa.getaj.net/AJE/index.m3u8",c:"news",q:"1080p",src:"Al Jazeera",v:10492,d:"Global news from the Middle East",clr:"#fa9000",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/f/f2/Aljazeera_eng.svg/960px-Aljazeera_eng.svg.png"},
 {id:2,n:"Al Jazeera Arabic",s:"https://live-hls-apps-aja-fa.getaj.net/AJA/01.m3u8",c:"news",q:"1080p",src:"Al Jazeera",v:13631,d:"Arabic-language 24h news",clr:"#fa9000",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/f/f2/Aljazeera_eng.svg/960px-Aljazeera_eng.svg.png"},
@@ -306,7 +468,7 @@ var CHANNELS=[
 {id:8,n:"ABC News Live",s:"https://abc-news-dmd-streams-1.akamaized.net/out/v1/701126012d044971b3fa89406a440133/index.m3u8",c:"news",q:"720p",src:"ABC News",v:10380,d:"24/7 live news from ABC",clr:"#e4002b",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/6/63/ABC_News_Live_logo_2021.svg/960px-ABC_News_Live_logo_2021.svg.png"},
 {id:9,n:"ABC News Stream 1",s:"https://abcnews-streams.akamaized.net/hls/live/2023560/abcnewshudson1/master_4000.m3u8",c:"news",q:"720p",src:"ABC News",v:8200,d:"ABC News live stream",clr:"#e4002b",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/6/63/ABC_News_Live_logo_2021.svg/960px-ABC_News_Live_logo_2021.svg.png"},
 {id:10,n:"Africa 24",s:"https://africa24.vedge.infomaniak.com/livecast/ik:africa24/manifest.m3u8",c:"news",q:"1080p",src:"Infomaniak",v:2469,d:"Pan-African news",clr:"#007a3d",logo:"https://africa24tv.com/wp-content/uploads/2021/09/logo.png"},
-{id:11,n:"Euronews English",s:"https://d35j504z0x2vu2.cloudfront.net/v1/master/0bc8e8376bd8417a1b6761138aa41c26c7309312/euronews/euronews-en.m3u8",c:"news",q:"720p",src:"Euronews",v:6721,d:"European world news",clr:"#003876",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/Euronews_2016.svg/960px-Euronews_2016.svg.png"},
+{id:11,n:"Euronews English",s:"https://d35j504z0x2vu2.cloudfront.net/v1/master/0bc8e8376bd8417a1b6761138aa41c26c7309312/euronews/euronews-en.m3u8",c:"news",q:"720p",src:"Euronews",v:6721,d:"European world news",clr:"#003876",logo:"https://jiotvimages.cdn.jio.com/dare_images/images/Euro_News.png"},
 {id:12,n:"Court TV",s:"https://cdn-uw2-prod.tsv2.amagi.tv/linear/amg01438-ewscrippscompan-courttv-tablo/playlist.m3u8",c:"news",q:"1080p",src:"Stirr",v:13660,d:"Live trial coverage",clr:"#1a3a5c",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/0/0c/Court_TV_2019.svg/960px-Court_TV_2019.svg.png"},
 {id:13,n:"ACCDN",s:"https://raycom-accdn-firetv.amagi.tv/playlist.m3u8",c:"sports",q:"1080p",src:"Amagi",v:9995,d:"ACC Digital Network",clr:"#003087",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/8/8c/ACC_Network_logo.svg/960px-ACC_Network_logo.svg.png"},
 {id:14,n:"CBS Sports Golazo",s:"https://proped3fhg87.airspace-cdn.cbsivideo.com/golazo-live-dai/master/golazo-live-dai.m3u8",c:"sports",q:"720p",src:"CBS",v:8200,d:"24/7 soccer network",clr:"#0047ab",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/5/55/CBS_Sports_Golazo_Network_logo.svg/960px-CBS_Sports_Golazo_Network_logo.svg.png"},
@@ -373,173 +535,718 @@ var CHANNELS=[
 {id:75,n:"Sport Italia",s:"https://amg01370-italiansportcom-sportitalia-rakuten-3hmdb.amagi.tv/hls/amagi_hls_data_rakutenAA-sportitalia-rakuten/CDN/master.m3u8",c:"sports",q:"1080p",src:"Rakuten",v:6764,d:"Italian sports",clr:"#00897b",logo:"https://upload.wikimedia.org/wikipedia/en/thumb/0/05/Sportitalia_logo.svg/960px-Sportitalia_logo.svg.png"},
 {id:76,n:"Africa 24 Sport",s:"https://africa24.vedge.infomaniak.com/livecast/ik:africa24sport/manifest.m3u8",c:"sports",q:"1080p",src:"Infomaniak",v:2800,d:"African sports",clr:"#007a3d",logo:"https://africa24tv.com/wp-content/uploads/2021/09/logo.png"}
 ];
-var CATS=[{id:"all",label:"All",icon:"fa-globe"},{id:"news",label:"News",icon:"fa-newspaper"},{id:"sports",label:"Sports",icon:"fa-futbol"},{id:"movies",label:"Movies",icon:"fa-film"},{id:"entertainment",label:"Entertainment",icon:"fa-star"},{id:"music",label:"Music",icon:"fa-music"},{id:"kids",label:"Kids",icon:"fa-child"},{id:"documentary",label:"Docs",icon:"fa-book"},{id:"international",label:"World",icon:"fa-earth-americas"}];
-var CAT_GRAD={news:'linear-gradient(135deg,#1a237e 0%,#0d47a1 50%,#01579b 100%)',sports:'linear-gradient(135deg,#1b5e20 0%,#2e7d32 50%,#388e3c 100%)',movies:'linear-gradient(135deg,#311b92 0%,#4a148c 50%,#6a1b9a 100%)',entertainment:'linear-gradient(135deg,#bf360c 0%,#d84315 50%,#e65100 100%)',music:'linear-gradient(135deg,#880e4f 0%,#ad1457 50%,#c2185b 100%)',kids:'linear-gradient(135deg,#e65100 0%,#f57c00 50%,#ff9800 100%)',documentary:'linear-gradient(135deg,#263238 0%,#37474f 50%,#455a64 100%)',international:'linear-gradient(135deg,#004d40 0%,#00695c 50%,#00796b 100%)'};
-var CAT_ICON={news:'fa-newspaper',sports:'fa-futbol',movies:'fa-film',entertainment:'fa-star',music:'fa-music',kids:'fa-child',documentary:'fa-book-open',international:'fa-earth-americas'};
 
+var CATS=[
+{id:"all",label:"All",icon:"fa-globe"},
+{id:"news",label:"News",icon:"fa-newspaper"},
+{id:"sports",label:"Sports",icon:"fa-futbol"},
+{id:"movies",label:"Movies",icon:"fa-film"},
+{id:"entertainment",label:"Entertainment",icon:"fa-star"},
+{id:"music",label:"Music",icon:"fa-music"},
+{id:"kids",label:"Kids",icon:"fa-child"},
+{id:"documentary",label:"Docs",icon:"fa-book"},
+{id:"international",label:"World",icon:"fa-earth-americas"}
+];
+
+var CAT_GRAD={
+news:'linear-gradient(135deg,#1a237e 0%,#0d47a1 50%,#01579b 100%)',
+sports:'linear-gradient(135deg,#1b5e20 0%,#2e7d32 50%,#388e3c 100%)',
+movies:'linear-gradient(135deg,#311b92 0%,#4a148c 50%,#6a1b9a 100%)',
+entertainment:'linear-gradient(135deg,#bf360c 0%,#d84315 50%,#e65100 100%)',
+music:'linear-gradient(135deg,#880e4f 0%,#ad1457 50%,#c2185b 100%)',
+kids:'linear-gradient(135deg,#e65100 0%,#f57c00 50%,#ff9800 100%)',
+documentary:'linear-gradient(135deg,#263238 0%,#37474f 50%,#455a64 100%)',
+international:'linear-gradient(135deg,#004d40 0%,#00695c 50%,#00796b 100%)'
+};
+var CAT_ICON={
+news:'fa-newspaper',sports:'fa-futbol',movies:'fa-film',entertainment:'fa-star',
+music:'fa-music',kids:'fa-child',documentary:'fa-book-open',international:'fa-earth-americas'
+};
+
+// ===== STATE =====
 var curFilter='all',curCh=null,hlsInst=null,heroIdx=0,heroIv=null;
 var retryCount=0,MAX_RETRIES=3,playerRetryTimer=null;
-var audioCtx=null,soundEnabled=true;
+var audioCtx=null;
+var soundEnabled=true;
 try{soundEnabled=localStorage.getItem('edge-sound')!=='off';}catch(e){}
 
+// ===== UTILITIES =====
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-function fmtV(v){return v>=1000?(v/1000).toFixed(1)+'K':v.toString();}
+function fmtV(v){if(v>=1000)return (v/1000).toFixed(1)+'K';return v.toString();}
 function catLabel(c){for(var i=0;i<CATS.length;i++){if(CATS[i].id===c)return CATS[i].label;}return c;}
-function ini(n){return n.replace(/[^A-Za-z0-9]/g,'').substring(0,2).toUpperCase();}
 
-// Logo: img with data attrs, fix broken ones via JS after render (NO inline onerror)
-function logoImg(ch,cls){return ch.logo?'<img class="'+cls+'" src="'+ch.logo+'" alt="'+esc(ch.n)+'" data-clr="'+ch.clr+'" data-ini="'+ini(ch.n)+'">':'';}
-function logoFB(ch,cls,sz){var s=sz||56,fs=Math.round(s*0.39),br=Math.round(s*0.25);return '<div class="'+cls+'" style="width:'+s+'px;height:'+s+'px;border-radius:'+br+'px;background:'+ch.clr+';color:#fff;font-size:'+fs+'px;font-weight:900;display:none;align-items:center;justify-content:center;font-family:var(--font-display);letter-spacing:1px">'+ini(ch.n)+'</div>';}
-
-function fixLogos(){
-  var imgs=document.querySelectorAll('img[data-clr]');
-  for(var i=0;i<imgs.length;i++){(function(img){
-    if(img.naturalWidth===0&&img.complete){swapFB(img);}
-    else{img.addEventListener('error',function(){swapFB(img);},{once:true});}
-  })(imgs[i]);}
-}
-function swapFB(img){
-  var p=img.parentNode;if(!p)return;
-  var fb=p.querySelector('.ch-logo-fb,.oa-logo-fb,.tr-logo-fb,.slide-logo-fb');
-  if(fb){fb.style.display='flex';}
-  img.style.display='none';
-}
-
+// ===== AUDIO =====
 function initAudio(){try{audioCtx=new(window.AudioContext||window.webkitAudioContext)();}catch(e){}}
-function playBlip(){if(!audioCtx||!soundEnabled)return;try{var o=audioCtx.createOscillator(),g=audioCtx.createGain();o.connect(g);g.connect(audioCtx.destination);o.type='sine';o.frequency.setValueAtTime(880,audioCtx.currentTime);o.frequency.exponentialRampToValueAtTime(440,audioCtx.currentTime+0.1);g.gain.setValueAtTime(0.08,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+0.1);o.start(audioCtx.currentTime);o.stop(audioCtx.currentTime+0.1);}catch(e){}}
-function playClick(){if(!audioCtx||!soundEnabled)return;try{var o=audioCtx.createOscillator(),g=audioCtx.createGain();o.connect(g);g.connect(audioCtx.destination);o.type='sine';o.frequency.setValueAtTime(1200,audioCtx.currentTime);o.frequency.exponentialRampToValueAtTime(600,audioCtx.currentTime+0.05);g.gain.setValueAtTime(0.03,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+0.05);o.start(audioCtx.currentTime);o.stop(audioCtx.currentTime+0.05);}catch(e){}}
-document.addEventListener('click',function fc(){if(!audioCtx)initAudio();document.removeEventListener('click',fc);},{once:true});
-function killSplash(){var s=document.getElementById('splash');if(s)s.classList.add('hide');}
+function playBlip(){
+  if(!audioCtx||!soundEnabled)return;
+  try{var o=audioCtx.createOscillator(),g=audioCtx.createGain();o.connect(g);g.connect(audioCtx.destination);o.type='sine';o.frequency.setValueAtTime(880,audioCtx.currentTime);o.frequency.exponentialRampToValueAtTime(440,audioCtx.currentTime+0.1);g.gain.setValueAtTime(0.08,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+0.1);o.start(audioCtx.currentTime);o.stop(audioCtx.currentTime+0.1);}catch(e){}
+}
+function playClick(){
+  if(!audioCtx||!soundEnabled)return;
+  try{var o=audioCtx.createOscillator(),g=audioCtx.createGain();o.connect(g);g.connect(audioCtx.destination);o.type='sine';o.frequency.setValueAtTime(1200,audioCtx.currentTime);o.frequency.exponentialRampToValueAtTime(600,audioCtx.currentTime+0.05);g.gain.setValueAtTime(0.03,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+0.05);o.start(audioCtx.currentTime);o.stop(audioCtx.currentTime+0.05);}catch(e){}
+}
+document.addEventListener('click',function onFirstClick(){
+  if(!audioCtx)initAudio();
+  document.removeEventListener('click',onFirstClick);
+},{once:true});
 
-function renderCats(){var el=document.getElementById('cat-filter');if(!el)return;var h='';for(var i=0;i<CATS.length;i++){var c=CATS[i];var cnt=c.id==='all'?CHANNELS.length:CHANNELS.filter(function(ch){return ch.c===c.id;}).length;h+='<button data-cat="'+c.id+'" class="'+(c.id===curFilter?'active':'')+'"><i class="fas '+c.icon+'"></i> '+c.label+' ('+cnt+')</button>';}el.innerHTML=h;}
+// ===== DISMISS SPLASH HELPER =====
+function killSplash(){
+  var s=document.getElementById('splash');
+  if(s)s.classList.add('hide');
+}
 
-function renderSkeletons(){var g=document.getElementById('channels-grid');if(!g)return;var h='';for(var i=0;i<12;i++)h+='<div class="skeleton-card"><div class="skeleton-thumb"></div><div class="skeleton-body"><div class="skeleton-line"></div><div class="skeleton-line short"></div></div></div>';g.innerHTML=h;}
-
-function renderGrid(){
-  var grid=document.getElementById('channels-grid');if(!grid)return;
-  var list=curFilter==='all'?CHANNELS:CHANNELS.filter(function(ch){return ch.c===curFilter;});
-  var ce=document.getElementById('ch-count');if(ce)ce.textContent=list.length+' channels';
-  if(!list.length){grid.innerHTML='<div style="text-align:center;padding:40px;color:var(--muted)">No channels found</div>';return;}
+// ===== RENDER CATEGORIES =====
+function renderCats(){
+  var el=document.getElementById('cat-filter');
+  if(!el)return;
   var h='';
-  for(var i=0;i<list.length;i++){var ch=list[i],cg=CAT_GRAD[ch.c]||CAT_GRAD.news,ci=CAT_ICON[ch.c]||'fa-tv';
-    h+='<div class="ch-card" data-id="'+ch.id+'"><div class="ch-thumb"><div class="ch-thumb-img" style="background:'+cg+'"></div><div class="ch-thumb-overlay"></div>'+logoImg(ch,'ch-logo')+logoFB(ch,'ch-logo-fb')+(ch.logo?'':'<i class="fas '+ci+' ch-thumb-icon"></i>')+'<div class="ch-thumb-label">'+esc(ch.n)+'</div><div class="ch-thumb-src">'+esc(ch.src)+'</div><span class="live-badge">LIVE</span><span class="ch-quality">'+ch.q+'</span><span class="ch-viewers"><i class="fas fa-eye"></i> '+fmtV(ch.v)+'</span><span class="ch-cat-tag">'+catLabel(ch.c)+'</span><div class="ch-play"><i class="fas fa-play"></i></div></div><div class="ch-body"><div class="ch-name">'+esc(ch.n)+'</div><div class="ch-desc">'+esc(ch.d)+'</div></div></div>';}
-  grid.innerHTML=h;setTimeout(fixLogos,100);
-}
-
-function setupLazyLoad(){
-  if(!('IntersectionObserver' in window)){var cards=document.querySelectorAll('.ch-card');for(var i=0;i<cards.length;i++)cards[i].classList.add('visible');return;}
-  var obs=new IntersectionObserver(function(e){for(var i=0;i<e.length;i++){if(e[i].isIntersecting){e[i].target.classList.add('visible');obs.unobserve(e[i].target);}}},{threshold:0.1,rootMargin:'50px'});
-  var cards=document.querySelectorAll('.ch-card');for(var i=0;i<cards.length;i++)obs.observe(cards[i]);
-}
-
-function renderHero(){
-  var feat=CHANNELS.slice().sort(function(a,b){return b.v-a.v;}).slice(0,5),se=document.getElementById('hero-slides'),de=document.getElementById('hero-dots');
-  if(!se||!de)return;var sh='',dh='';
-  for(var i=0;i<feat.length;i++){var ch=feat[i],ia=i===0?'active':'';
-    sh+='<div class="hero-slide '+ia+'" data-idx="'+i+'"><div class="slide-bg" style="background:'+(CAT_GRAD[ch.c]||CAT_GRAD.news)+'"></div><div class="slide-grad"></div><div class="slide-content"><div class="slide-label">NOW STREAMING</div>'+logoImg(ch,'slide-logo')+logoFB(ch,'slide-logo-fb',50)+'<h2 class="slide-title">'+esc(ch.n)+'</h2><p class="slide-desc">'+esc(ch.d)+'</p><div class="slide-meta"><span class="meta-badge dur"><i class="fas fa-clock" style="margin-right:3px"></i>24/7</span><span class="meta-badge qual">'+ch.q+'</span><span class="meta-badge cat">'+catLabel(ch.c)+'</span><span class="meta-badge src">'+esc(ch.src)+'</span></div><button class="btn-watch" data-id="'+ch.id+'"><i class="fas fa-play"></i> Watch Now</button></div></div>';
-    dh+='<span data-idx="'+i+'" class="'+(i===0?'active':'')+'"></span>';}
-  se.innerHTML=sh;de.innerHTML=dh;setTimeout(fixLogos,100);
-}
-function startHero(){heroIv=setInterval(function(){var sl=document.querySelectorAll('.hero-slide'),dt=document.querySelectorAll('.hero-dots span');if(!sl.length)return;sl[heroIdx].classList.remove('active');dt[heroIdx].classList.remove('active');heroIdx=(heroIdx+1)%sl.length;sl[heroIdx].classList.add('active');dt[heroIdx].classList.add('active');},6000);}
-function goHero(idx){var sl=document.querySelectorAll('.hero-slide'),dt=document.querySelectorAll('.hero-dots span');if(!sl.length)return;sl[heroIdx].classList.remove('active');dt[heroIdx].classList.remove('active');heroIdx=idx%sl.length;sl[heroIdx].classList.add('active');dt[heroIdx].classList.add('active');}
-
-function renderSidebar(){
-  var ob=document.getElementById('on-air-body'),tb=document.getElementById('trending-body');
-  var top=CHANNELS.slice().sort(function(a,b){return b.v-a.v;}).slice(0,6);
-  if(ob){var oh='';for(var i=0;i<top.length;i++){var ch=top[i];oh+='<div class="on-air-ch" data-id="'+ch.id+'"><div class="oa-dot"></div>'+logoImg(ch,'oa-logo')+logoFB(ch,'oa-logo-fb',20)+'<span class="oa-name">'+esc(ch.n)+'</span><span class="oa-viewers">'+fmtV(ch.v)+'</span></div>';}ob.innerHTML=oh;}
-  if(tb){var th='';for(var j=0;j<top.length;j++){var tc=top[j];th+='<div class="trending-item" data-id="'+tc.id+'"><span class="tr-rank">'+(j+1)+'</span>'+logoImg(tc,'tr-logo')+logoFB(tc,'tr-logo-fb',20)+'<span class="tr-name">'+esc(tc.n)+'</span><span class="tr-viewers">'+fmtV(tc.v)+'</span></div>';}tb.innerHTML=th;}
-  setTimeout(fixLogos,100);
-}
-
-function renderUpcoming(){
-  var el=document.getElementById('upcoming-scroll');if(!el)return;
-  var cats=['news','sports','movies','entertainment','music','kids','documentary','international'],h='';
-  for(var i=0;i<cats.length;i++){var chs=CHANNELS.filter(function(c){return c.c===cats[i];});if(!chs.length)continue;var pick=chs[Math.floor(Math.random()*chs.length)];var hrs=[18,19,20,21,22,23,0,1,2],hr=hrs[Math.floor(Math.random()*hrs.length)],ap=hr>=12?'PM':'AM',dp=hr===0?12:hr>12?hr-12:hr;
-    h+='<div class="upcoming-card" data-id="'+pick.id+'"><div class="uc-cat">'+catLabel(pick.c)+'</div><div class="uc-name">'+esc(pick.n)+'</div><div class="uc-time">'+dp+':00 '+ap+'</div></div>';}
+  for(var i=0;i<CATS.length;i++){
+    var c=CATS[i];
+    var cnt=c.id==='all'?CHANNELS.length:CHANNELS.filter(function(ch){return ch.c===c.id;}).length;
+    h+='<button data-cat="'+c.id+'" class="'+(c.id===curFilter?'active':'')+'"><i class="fas '+c.icon+'"></i> '+c.label+' <span style="opacity:0.6">('+cnt+')</span></button>';
+  }
   el.innerHTML=h;
 }
 
-function openPlayer(ch){curCh=ch;retryCount=0;if(playerRetryTimer){clearTimeout(playerRetryTimer);playerRetryTimer=null;}var m=document.getElementById('player-modal'),v=document.getElementById('hls-video'),t=document.getElementById('player-title'),st=document.getElementById('player-status');if(t)t.textContent=ch.n;if(st){st.className='p-status connecting';st.textContent='CONNECTING';}if(m)m.classList.add('open');hideOffline();showSpinner();startStream(ch.s);document.body.style.overflow='hidden';var ms=document.getElementById('mistral-msg');if(ms)ms.textContent='Now playing: '+ch.n+'. Ask me for similar channels!';}
+// ===== RENDER SKELETONS =====
+function renderSkeletons(){
+  var grid=document.getElementById('channels-grid');
+  if(!grid)return;
+  var h='';
+  for(var i=0;i<12;i++){
+    h+='<div class="skeleton-card"><div class="skeleton-thumb"></div><div class="skeleton-body"><div class="skeleton-line"></div><div class="skeleton-line short"></div></div></div>';
+  }
+  grid.innerHTML=h;
+}
+
+// ===== RENDER CHANNEL GRID =====
+function makeLogoHtml(ch,catIcon,cls){
+  var initials=ch.n.replace(/[^A-Za-z0-9]/g,'').substring(0,2).toUpperCase();
+  var fbCls=cls||'ch-logo';
+  var logoImg=ch.logo?'<img class="'+fbCls+'" src="'+ch.logo+'" alt="'+esc(ch.n)+'" onerror="this.style.display=\'none\';var fb=this.nextElementSibling;if(fb&&fb.classList.contains(\'logo-fb\'))fb.style.display=\'flex\'">':'';
+  var logoFb=ch.logo?'<div class="logo-fb" style="display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:56px;height:56px;border-radius:14px;background:'+ch.clr+';color:#fff;font-size:22px;font-weight:900;align-items:center;justify-content:center;font-family:var(--font-display);letter-spacing:1px">'+initials+'</div>':'';
+  var iconStyle=ch.logo?'':'<i class="fas '+catIcon+' ch-thumb-icon"></i>';
+  return{logoHtml:logoImg+logoFb,iconStyle:iconStyle};
+}
+function renderGrid(){
+  var grid=document.getElementById('channels-grid');
+  if(!grid)return;
+  var list=curFilter==='all'?CHANNELS:CHANNELS.filter(function(ch){return ch.c===curFilter;});
+  var countEl=document.getElementById('ch-count');
+  if(countEl)countEl.textContent=list.length+' channels';
+  if(!list.length){grid.innerHTML='<div style="text-align:center;padding:40px;color:var(--muted)">No channels found</div>';return;}
+  var h='';
+  for(var i=0;i<list.length;i++){
+    var ch=list[i];
+    var catGrad=CAT_GRAD[ch.c]||CAT_GRAD.news;
+    var catIcon=CAT_ICON[ch.c]||'fa-tv';
+    var lg=makeLogoHtml(ch,catIcon);
+    var logoHtml=lg.logoHtml;
+    var iconStyle=lg.iconStyle;
+    h+='<div class="ch-card" data-id="'+ch.id+'">'+
+      '<div class="ch-thumb">'+
+        '<div class="ch-thumb-img" style="background:'+catGrad+'"></div>'+
+        '<div class="ch-thumb-overlay"></div>'+
+        logoHtml+
+        iconStyle+
+        '<div class="ch-thumb-label">'+esc(ch.n)+'</div>'+
+        '<div class="ch-thumb-src">'+esc(ch.src)+'</div>'+
+        '<span class="live-badge">LIVE</span>'+
+        '<span class="ch-quality">'+ch.q+'</span>'+
+        '<span class="ch-viewers"><i class="fas fa-eye"></i> '+fmtV(ch.v)+'</span>'+
+        '<span class="ch-cat-tag">'+catLabel(ch.c)+'</span>'+
+        '<div class="ch-play"><i class="fas fa-play"></i></div>'+
+      '</div>'+
+      '<div class="ch-body">'+
+        '<div class="ch-name">'+esc(ch.n)+'</div>'+
+        '<div class="ch-desc">'+esc(ch.d)+'</div>'+
+      '</div></div>';
+  }
+  grid.innerHTML=h;
+}
+
+// ===== LAZY LOAD =====
+function setupLazyLoad(){
+  if(!('IntersectionObserver' in window)){
+    var cards=document.querySelectorAll('.ch-card');
+    for(var i=0;i<cards.length;i++)cards[i].classList.add('visible');
+    return;
+  }
+  var observer=new IntersectionObserver(function(entries){
+    for(var i=0;i<entries.length;i++){
+      if(entries[i].isIntersecting){
+        entries[i].target.classList.add('visible');
+        observer.unobserve(entries[i].target);
+      }
+    }
+  },{threshold:0.1,rootMargin:'50px'});
+  var cards=document.querySelectorAll('.ch-card');
+  for(var i=0;i<cards.length;i++)observer.observe(cards[i]);
+}
+
+// ===== RENDER HERO =====
+function renderHero(){
+  var featured=CHANNELS.slice().sort(function(a,b){return b.v-a.v;}).slice(0,5);
+  var slidesEl=document.getElementById('hero-slides');
+  var dotsEl=document.getElementById('hero-dots');
+  if(!slidesEl||!dotsEl)return;
+  var sh='',dh='';
+  for(var i=0;i<featured.length;i++){
+    var ch=featured[i];
+    var isActive=i===0?'active':'';
+    var initials=ch.n.replace(/[^A-Za-z0-9]/g,'').substring(0,2).toUpperCase();
+  var logoHtml=ch.logo?'<img class="slide-logo" src="'+ch.logo+'" alt="'+esc(ch.n)+'" onerror="this.style.display=\'none\';var fb=this.nextElementSibling;if(fb&&fb.classList.contains(\'logo-fb\'))fb.style.display=\'flex\'">':'';
+  logoHtml+=ch.logo?'<div class="logo-fb" style="display:none;width:72px;height:72px;border-radius:16px;background:'+ch.clr+';color:#fff;font-size:28px;font-weight:900;align-items:center;justify-content:center;font-family:var(--font-display);letter-spacing:1px">'+initials+'</div>':'';
+    sh+='<div class="hero-slide '+isActive+'" data-idx="'+i+'">'+
+      '<div class="slide-bg" style="background:'+(CAT_GRAD[ch.c]||CAT_GRAD.news)+'"></div>'+
+      '<div class="slide-grad"></div>'+
+      '<div class="slide-content">'+
+        '<div class="slide-label">NOW STREAMING</div>'+
+        logoHtml+
+        '<h2 class="slide-title">'+esc(ch.n)+'</h2>'+
+        '<p class="slide-desc">'+esc(ch.d)+'</p>'+
+        '<div class="slide-meta">'+
+          '<span class="meta-badge dur"><i class="fas fa-clock" style="margin-right:3px"></i>24/7</span>'+
+          '<span class="meta-badge qual">'+ch.q+'</span>'+
+          '<span class="meta-badge cat">'+catLabel(ch.c)+'</span>'+
+          '<span class="meta-badge src">'+esc(ch.src)+'</span>'+
+        '</div>'+
+        '<button class="btn-watch" data-id="'+ch.id+'"><i class="fas fa-play"></i> Watch Now</button>'+
+      '</div></div>';
+    dh+='<span data-idx="'+i+'" class="'+(i===0?'active':'')+'"></span>';
+  }
+  slidesEl.innerHTML=sh;
+  dotsEl.innerHTML=dh;
+}
+
+function startHero(){
+  heroIv=setInterval(function(){
+    var slides=document.querySelectorAll('.hero-slide');
+    var dots=document.querySelectorAll('.hero-dots span');
+    if(!slides.length)return;
+    slides[heroIdx].classList.remove('active');
+    dots[heroIdx].classList.remove('active');
+    heroIdx=(heroIdx+1)%slides.length;
+    slides[heroIdx].classList.add('active');
+    dots[heroIdx].classList.add('active');
+  },6000);
+}
+
+function goHero(idx){
+  var slides=document.querySelectorAll('.hero-slide');
+  var dots=document.querySelectorAll('.hero-dots span');
+  if(!slides.length)return;
+  slides[heroIdx].classList.remove('active');
+  dots[heroIdx].classList.remove('active');
+  heroIdx=idx%slides.length;
+  slides[heroIdx].classList.add('active');
+  dots[heroIdx].classList.add('active');
+}
+
+// ===== RENDER SIDEBAR =====
+function renderSidebar(){
+  var onAirBody=document.getElementById('on-air-body');
+  var trendingBody=document.getElementById('trending-body');
+  var topCh=CHANNELS.slice().sort(function(a,b){return b.v-a.v;}).slice(0,6);
+  if(onAirBody){
+    var oh='';
+    for(var i=0;i<topCh.length;i++){
+      var ch=topCh[i];
+      var initials=ch.n.replace(/[^A-Za-z0-9]/g,'').substring(0,2).toUpperCase();
+      var logoHtml=ch.logo?'<img class="oa-logo" src="'+ch.logo+'" onerror="this.style.display=\'none\';var fb=this.nextElementSibling;if(fb&&fb.classList.contains(\'logo-fb\'))fb.style.display=\'flex\'">':'';
+      logoHtml+=ch.logo?'<div class="logo-fb" style="display:none;width:40px;height:40px;border-radius:10px;background:'+ch.clr+';color:#fff;font-size:16px;font-weight:900;align-items:center;justify-content:center;font-family:var(--font-display)">'+initials+'</div>':'';
+      oh+='<div class="on-air-ch" data-id="'+ch.id+'"><div class="oa-dot"></div>'+logoHtml+'<span class="oa-name">'+esc(ch.n)+'</span><span class="oa-viewers">'+fmtV(ch.v)+'</span></div>';
+    }
+    onAirBody.innerHTML=oh;
+  }
+  if(trendingBody){
+    var th='';
+    for(var j=0;j<topCh.length;j++){
+      var tc=topCh[j];
+      var initials2=tc.n.replace(/[^A-Za-z0-9]/g,'').substring(0,2).toUpperCase();
+      var logoHtml2=tc.logo?'<img class="tr-logo" src="'+tc.logo+'" onerror="this.style.display=\'none\';var fb=this.nextElementSibling;if(fb&&fb.classList.contains(\'logo-fb\'))fb.style.display=\'flex\'">':'';
+      logoHtml2+=tc.logo?'<div class="logo-fb" style="display:none;width:32px;height:32px;border-radius:8px;background:'+tc.clr+';color:#fff;font-size:13px;font-weight:900;align-items:center;justify-content:center;font-family:var(--font-display)">'+initials2+'</div>':'';
+      th+='<div class="trending-item" data-id="'+tc.id+'"><span class="tr-rank">'+(j+1)+'</span>'+logoHtml2+'<span class="tr-name">'+esc(tc.n)+'</span><span class="tr-viewers">'+fmtV(tc.v)+'</span></div>';
+    }
+    trendingBody.innerHTML=th;
+  }
+}
+
+// ===== RENDER UPCOMING =====
+function renderUpcoming(){
+  var el=document.getElementById('upcoming-scroll');
+  if(!el)return;
+  var cats=['news','sports','movies','entertainment','music','kids','documentary','international'];
+  var h='';
+  for(var i=0;i<cats.length;i++){
+    var chs=CHANNELS.filter(function(c){return c.c===cats[i];});
+    if(!chs.length)continue;
+    var pick=chs[Math.floor(Math.random()*chs.length)];
+    var hrs=[18,19,20,21,22,23,0,1,2];
+    var hr=hrs[Math.floor(Math.random()*hrs.length)];
+    var ampm=hr>=12?'PM':'AM';
+    var disp=hr===0?12:hr>12?hr-12:hr;
+    h+='<div class="upcoming-card" data-id="'+pick.id+'">'+
+      '<div class="uc-cat">'+catLabel(pick.c)+'</div>'+
+      '<div class="uc-name">'+esc(pick.n)+'</div>'+
+      '<div class="uc-time">'+disp+':00 '+ampm+'</div></div>';
+  }
+  el.innerHTML=h;
+}
+
+// ===== PLAYER =====
+function openPlayer(ch){
+  curCh=ch;
+  retryCount=0;
+  if(playerRetryTimer){clearTimeout(playerRetryTimer);playerRetryTimer=null;}
+  var modal=document.getElementById('player-modal');
+  var video=document.getElementById('hls-video');
+  var title=document.getElementById('player-title');
+  var status=document.getElementById('player-status');
+  if(title)title.textContent=ch.n;
+  if(status){status.className='p-status connecting';status.textContent='CONNECTING';}
+  if(modal)modal.classList.add('open');
+  hideOffline();
+  showSpinnerEl();
+  startStream(ch.s);
+  document.body.style.overflow='hidden';
+  var msgEl=document.getElementById('mistral-msg');
+  if(msgEl)msgEl.textContent='Now playing: '+ch.n+'. Ask me for similar channels!';
+}
 
 function startStream(url){
   if(hlsInst){hlsInst.destroy();hlsInst=null;}
-  var v=document.getElementById('hls-video');if(!v)return;v.removeAttribute('src');v.load();hideOffline();showSpinner();
+  var video=document.getElementById('hls-video');
+  if(!video)return;
+  video.removeAttribute('src');
+  video.load();
+  hideOffline();
+  showSpinnerEl();
   if(typeof Hls!=='undefined'&&Hls.isSupported()){
     hlsInst=new Hls({enableWorker:true,lowLatencyMode:true,maxBufferLength:30,maxMaxBufferLength:60});
-    hlsInst.loadSource(url);hlsInst.attachMedia(v);
-    hlsInst.on(Hls.Events.MANIFEST_PARSED,function(){v.play().catch(function(){});hideSpinner();setStatus('live');updateQuality();});
-    hlsInst.on(Hls.Events.ERROR,function(ev,d){if(d.fatal){if(d.type===Hls.ErrorTypes.MEDIA_ERROR)hlsInst.recoverMediaError();else fatalErr(url);}});
-  }else if(v.canPlayType('application/vnd.apple.mpegurl')){
-    v.src=url;v.addEventListener('loadedmetadata',function om(){v.play().catch(function(){});hideSpinner();setStatus('live');updateQuality();v.removeEventListener('loadedmetadata',om);});
+    hlsInst.loadSource(url);
+    hlsInst.attachMedia(video);
+    hlsInst.on(Hls.Events.MANIFEST_PARSED,function(){
+      video.play().catch(function(){});
+      hideSpinnerEl();
+      setStatus('live');
+      updateQuality();
+    });
+    hlsInst.on(Hls.Events.ERROR,function(event,data){
+      if(data.fatal){
+        if(data.type===Hls.ErrorTypes.MEDIA_ERROR){hlsInst.recoverMediaError();}
+        else{handleFatalError(url);}
+      }
+    });
+  }else if(video.canPlayType('application/vnd.apple.mpegurl')){
+    video.src=url;
+    video.addEventListener('loadedmetadata',function onMeta(){
+      video.play().catch(function(){});
+      hideSpinnerEl();
+      setStatus('live');
+      updateQuality();
+      video.removeEventListener('loadedmetadata',onMeta);
+    });
   }
-  v.onerror=function(){fatalErr(url);};v.onwaiting=function(){showBuffer();};v.onplaying=function(){hideBuffer();hideSpinner();setStatus('live');};v.onloadedmetadata=function(){updateQuality();};
+  video.onerror=function(){handleFatalError(url);};
+  video.onwaiting=function(){showBuffering();};
+  video.onplaying=function(){hideBuffering();hideSpinnerEl();setStatus('live');};
+  video.onloadedmetadata=function(){updateQuality();};
 }
-function fatalErr(url){if(retryCount<MAX_RETRIES){retryCount++;var d=Math.pow(2,retryCount)*1000;showToast('Retrying in '+(d/1000)+'s');if(playerRetryTimer)clearTimeout(playerRetryTimer);playerRetryTimer=setTimeout(function(){startStream(url);},d);}else tryNext();}
-function tryNext(){if(!curCh){showOffline();return;}var same=CHANNELS.filter(function(ch){return ch.c===curCh.c&&ch.id!==curCh.id;});if(!same.length){showOffline();return;}var nx=same[0];showToast('Switching to: '+nx.n);retryCount=0;curCh=nx;var t=document.getElementById('player-title');if(t)t.textContent=nx.n;setStatus('connecting');hideOffline();showSpinner();startStream(nx.s);}
-function closePlayer(){var m=document.getElementById('player-modal'),v=document.getElementById('hls-video');if(hlsInst){hlsInst.destroy();hlsInst=null;}if(v){v.pause();v.removeAttribute('src');v.load();}if(m)m.classList.remove('open');if(playerRetryTimer){clearTimeout(playerRetryTimer);playerRetryTimer=null;}document.body.style.overflow='';hideOffline();hideSpinner();hideBuffer();}
-function setStatus(s){var e=document.getElementById('player-status');if(!e)return;e.className='p-status '+s;e.textContent=s==='live'?'LIVE':s==='connecting'?'CONNECTING':'OFFLINE';}
-function showSpinner(){var e=document.getElementById('player-spinner');if(e)e.classList.add('show');}
-function hideSpinner(){var e=document.getElementById('player-spinner');if(e)e.classList.remove('show');}
-function showBuffer(){var e=document.getElementById('buffering-overlay');if(e)e.classList.add('show');}
-function hideBuffer(){var e=document.getElementById('buffering-overlay');if(e)e.classList.remove('show');}
-function showOffline(){var e=document.getElementById('offline-overlay');if(e)e.classList.add('show');setStatus('offline');hideSpinner();hideBuffer();}
-function hideOffline(){var e=document.getElementById('offline-overlay');if(e)e.classList.remove('show');}
-function updateQuality(){var v=document.getElementById('hls-video'),qi=document.getElementById('quality-indicator');if(!v||!qi)return;var w=v.videoWidth;qi.textContent=w>=2160?'4K':w>=1280?'HD':w>=720?'720p':'SD';qi.style.display='inline-block';}
 
-var toastT=null;
-function showToast(msg){var e=document.getElementById('toast');if(!e)return;e.textContent=msg;e.className='toast show';if(toastT)clearTimeout(toastT);toastT=setTimeout(function(){e.classList.remove('show');},3000);}
+function handleFatalError(url){
+  if(retryCount<MAX_RETRIES){
+    retryCount++;
+    var delay=Math.pow(2,retryCount)*1000;
+    showToast('Retrying in '+(delay/1000)+'s ('+retryCount+'/'+MAX_RETRIES+')');
+    if(playerRetryTimer)clearTimeout(playerRetryTimer);
+    playerRetryTimer=setTimeout(function(){startStream(url);},delay);
+  }else{tryNextInCategory();}
+}
 
-function toggleSound(){soundEnabled=!soundEnabled;try{localStorage.setItem('edge-sound',soundEnabled?'on':'off');}catch(e){}var b=document.getElementById('sound-toggle');if(b)b.innerHTML=soundEnabled?'<i class="fas fa-volume-up"></i>':'<i class="fas fa-volume-mute"></i>';if(soundEnabled&&!audioCtx)initAudio();showToast(soundEnabled?'Sound on':'Sound off');}
+function tryNextInCategory(){
+  if(!curCh){showOffline();return;}
+  var same=CHANNELS.filter(function(ch){return ch.c===curCh.c&&ch.id!==curCh.id;});
+  if(!same.length){showOffline();return;}
+  var next=same[0];
+  showToast('Switching to: '+next.n);
+  retryCount=0;
+  curCh=next;
+  var t=document.getElementById('player-title');if(t)t.textContent=next.n;
+  setStatus('connecting');
+  hideOffline();
+  showSpinnerEl();
+  startStream(next.s);
+}
 
-function doSearch(q){q=q.toLowerCase().trim();if(!q){curFilter='all';renderGrid();setupLazyLoad();renderCats();return;}var r=CHANNELS.filter(function(ch){return ch.n.toLowerCase().indexOf(q)>=0||ch.c.indexOf(q)>=0||ch.src.toLowerCase().indexOf(q)>=0||ch.d.toLowerCase().indexOf(q)>=0;});var g=document.getElementById('channels-grid'),ce=document.getElementById('ch-count');if(ce)ce.textContent=r.length+' results';if(!r.length){if(g)g.innerHTML='<div style="text-align:center;padding:40px;color:var(--muted)">No results</div>';return;}var h='';for(var i=0;i<r.length;i++){var ch=r[i],cg=CAT_GRAD[ch.c]||CAT_GRAD.news,ci=CAT_ICON[ch.c]||'fa-tv';h+='<div class="ch-card visible" data-id="'+ch.id+'"><div class="ch-thumb"><div class="ch-thumb-img" style="background:'+cg+'"></div><div class="ch-thumb-overlay"></div>'+logoImg(ch,'ch-logo')+logoFB(ch,'ch-logo-fb')+'<div class="ch-thumb-label">'+esc(ch.n)+'</div><div class="ch-thumb-src">'+esc(ch.src)+'</div><span class="live-badge">LIVE</span><span class="ch-quality">'+ch.q+'</span><span class="ch-viewers"><i class="fas fa-eye"></i> '+fmtV(ch.v)+'</span><span class="ch-cat-tag">'+catLabel(ch.c)+'</span><div class="ch-play"><i class="fas fa-play"></i></div></div><div class="ch-body"><div class="ch-name">'+esc(ch.n)+'</div><div class="ch-desc">'+esc(ch.d)+'</div></div></div>';}if(g)g.innerHTML=h;setTimeout(fixLogos,100);}
+function closePlayer(){
+  var modal=document.getElementById('player-modal');
+  var video=document.getElementById('hls-video');
+  if(hlsInst){hlsInst.destroy();hlsInst=null;}
+  if(video){video.pause();video.removeAttribute('src');video.load();}
+  if(modal)modal.classList.remove('open');
+  if(playerRetryTimer){clearTimeout(playerRetryTimer);playerRetryTimer=null;}
+  document.body.style.overflow='';
+  hideOffline();hideSpinnerEl();hideBuffering();
+}
 
-function updateStats(){var c=document.getElementById('stat-ch'),h=document.getElementById('stat-hd');if(c)c.textContent=CHANNELS.length;if(h)h.textContent=CHANNELS.filter(function(ch){return ch.q==='1080p';}).length;}
+function setStatus(s){
+  var el=document.getElementById('player-status');
+  if(!el)return;
+  el.className='p-status '+s;
+  el.textContent=s==='live'?'LIVE':s==='connecting'?'CONNECTING':'OFFLINE';
+}
+function showSpinnerEl(){var el=document.getElementById('player-spinner');if(el)el.classList.add('show');}
+function hideSpinnerEl(){var el=document.getElementById('player-spinner');if(el)el.classList.remove('show');}
+function showBuffering(){var el=document.getElementById('buffering-overlay');if(el)el.classList.add('show');}
+function hideBuffering(){var el=document.getElementById('buffering-overlay');if(el)el.classList.remove('show');}
+function showOffline(){var el=document.getElementById('offline-overlay');if(el)el.classList.add('show');setStatus('offline');hideSpinnerEl();hideBuffering();}
+function hideOffline(){var el=document.getElementById('offline-overlay');if(el)el.classList.remove('show');}
 
-function askMistral(q,ctx){var m=document.getElementById('mistral-msg');if(!m)return;m.textContent='Thinking...';var sp='You are EDGE IPTV assistant. '+CHANNELS.length+' free HD channels. ';var cats={};for(var i=0;i<CHANNELS.length;i++){var ch=CHANNELS[i];if(!cats[ch.c])cats[ch.c]=[];cats[ch.c].push(ch.n);}for(var k in cats)sp+=k+': '+cats[k].join(', ')+'. ';if(ctx)sp+='Watching: '+ctx+'. ';sp+='Be brief. Recommend by name.';
-fetch('/api/ai',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:[{role:'system',content:sp},{role:'user',content:q}],max_tokens:200})}).then(function(r){return r.json();}).then(function(d){if(d.choices&&d.choices[0])m.textContent=d.choices[0].message.content;else if(d.error)m.textContent=typeof d.error==='string'?d.error:JSON.stringify(d.error);else m.textContent='No response.';}).catch(function(){var ql=q.toLowerCase(),mt=CHANNELS.filter(function(ch){return ch.n.toLowerCase().indexOf(ql)>=0||ch.c.indexOf(ql)>=0;}).slice(0,5);m.textContent=mt.length?'Try: '+mt.map(function(c){return c.n+' ('+catLabel(c.c)+')';}).join(', '):'No matches. Try "news" or "sports".';});}
+function updateQuality(){
+  var video=document.getElementById('hls-video');
+  var qi=document.getElementById('quality-indicator');
+  if(!video||!qi)return;
+  var w=video.videoWidth;
+  if(w>=2160)qi.textContent='4K';
+  else if(w>=1280)qi.textContent='HD';
+  else if(w>=720)qi.textContent='720p';
+  else qi.textContent='SD';
+  qi.style.display='inline-block';
+}
 
-function initApp(){try{renderCats();renderSkeletons();setTimeout(function(){renderGrid();setupLazyLoad();},150);renderHero();startHero();renderSidebar();renderUpcoming();bindAll();updateStats();}catch(e){console.error('initApp:',e);}killSplash();}
+// ===== TOAST =====
+var toastTimer=null;
+function showToast(msg,type){
+  var el=document.getElementById('toast');
+  if(!el)return;
+  el.textContent=msg;
+  el.className='toast'+(type==='error'?' error':'')+' show';
+  if(toastTimer)clearTimeout(toastTimer);
+  toastTimer=setTimeout(function(){el.classList.remove('show');},3000);
+}
 
+// ===== SOUND TOGGLE =====
+function toggleSound(){
+  soundEnabled=!soundEnabled;
+  try{localStorage.setItem('edge-sound',soundEnabled?'on':'off');}catch(e){}
+  var btn=document.getElementById('sound-toggle');
+  if(btn)btn.innerHTML=soundEnabled?'<i class="fas fa-volume-up"></i>':'<i class="fas fa-volume-mute"></i>';
+  if(soundEnabled&&!audioCtx)initAudio();
+  showToast(soundEnabled?'Sound enabled':'Sound disabled');
+}
+
+// ===== SEARCH =====
+function doSearch(q){
+  q=q.toLowerCase().trim();
+  if(!q){curFilter='all';renderGrid();setupLazyLoad();renderCats();return;}
+  var results=CHANNELS.filter(function(ch){
+    return ch.n.toLowerCase().indexOf(q)>=0||ch.c.toLowerCase().indexOf(q)>=0||ch.src.toLowerCase().indexOf(q)>=0||ch.d.toLowerCase().indexOf(q)>=0;
+  });
+  var grid=document.getElementById('channels-grid');
+  var countEl=document.getElementById('ch-count');
+  if(countEl)countEl.textContent=results.length+' results';
+  if(!results.length){if(grid)grid.innerHTML='<div style="text-align:center;padding:40px;color:var(--muted)">No channels match "'+esc(q)+'"</div>';return;}
+  var h='';
+  for(var i=0;i<results.length;i++){
+    var ch=results[i];
+    var catGrad=CAT_GRAD[ch.c]||CAT_GRAD.news;
+    var catIcon=CAT_ICON[ch.c]||'fa-tv';
+    var lg=makeLogoHtml(ch,catIcon);
+    var logoHtml=lg.logoHtml;
+    var iconStyle=lg.iconStyle;
+    h+='<div class="ch-card visible" data-id="'+ch.id+'">'+
+      '<div class="ch-thumb">'+
+        '<div class="ch-thumb-img" style="background:'+catGrad+'"></div>'+
+        '<div class="ch-thumb-overlay"></div>'+
+        logoHtml+
+        iconStyle+
+        '<div class="ch-thumb-label">'+esc(ch.n)+'</div>'+
+        '<div class="ch-thumb-src">'+esc(ch.src)+'</div>'+
+        '<span class="live-badge">LIVE</span>'+
+        '<span class="ch-quality">'+ch.q+'</span>'+
+        '<span class="ch-viewers"><i class="fas fa-eye"></i> '+fmtV(ch.v)+'</span>'+
+        '<span class="ch-cat-tag">'+catLabel(ch.c)+'</span>'+
+        '<div class="ch-play"><i class="fas fa-play"></i></div>'+
+      '</div>'+
+      '<div class="ch-body">'+
+        '<div class="ch-name">'+esc(ch.n)+'</div>'+
+        '<div class="ch-desc">'+esc(ch.d)+'</div>'+
+      '</div></div>';
+  }
+  if(grid)grid.innerHTML=h;
+}
+
+// ===== STATS =====
+function updateStats(){
+  var chEl=document.getElementById('stat-ch');
+  var hdEl=document.getElementById('stat-hd');
+  if(chEl)chEl.textContent=CHANNELS.length;
+  if(hdEl)hdEl.textContent=CHANNELS.filter(function(ch){return ch.q==='1080p'||ch.q==='4K';}).length;
+}
+
+// ===== MISTRAL AI =====
+function getChannelContext(){
+  var cats={};
+  for(var i=0;i<CHANNELS.length;i++){var ch=CHANNELS[i];if(!cats[ch.c])cats[ch.c]=[];cats[ch.c].push(ch.n);}
+  var ctx='';
+  for(var k in cats){ctx+=k+': '+cats[k].join(', ')+'. ';}
+  return ctx;
+}
+
+function askMistral(question,channelContext){
+  var msgEl=document.getElementById('mistral-msg');
+  if(!msgEl)return;
+  msgEl.textContent='Thinking...';
+  var sysPrompt='You are EDGE IPTV assistant. We have '+CHANNELS.length+' free live HD TV channels. '+getChannelContext()+(channelContext?' User is currently watching: '+channelContext+'. ':'')+'Help users find channels. Be brief and specific. Recommend channels by name.';
+  fetch('/api/ai',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({messages:[{role:'system',content:sysPrompt},{role:'user',content:question}],max_tokens:200})
+  }).then(function(r){return r.json();}).then(function(data){
+    if(data.choices&&data.choices[0])msgEl.textContent=data.choices[0].message.content;
+    else if(data.error)msgEl.textContent=typeof data.error==='string'?data.error:JSON.stringify(data.error);
+    else msgEl.textContent='No response from AI.';
+  }).catch(function(){
+    var q=question.toLowerCase();
+    var matches=CHANNELS.filter(function(ch){
+      return ch.n.toLowerCase().indexOf(q)>=0||ch.c.indexOf(q)>=0||ch.d.toLowerCase().indexOf(q)>=0;
+    }).slice(0,5);
+    if(matches.length){
+      var resp='Try these channels: ';
+      for(var i=0;i<matches.length;i++){
+        resp+=matches[i].n+' ('+catLabel(matches[i].c)+', '+matches[i].q+')';
+        if(i<matches.length-1)resp+=', ';
+      }
+      msgEl.textContent=resp;
+    }else{
+      msgEl.textContent='No matching channels found. Try searching for a topic like "news", "sports", or "music".';
+    }
+  });
+}
+
+// ===== INIT APP =====
+function initApp(){
+  try{
+    renderCats();
+    renderSkeletons();
+    setTimeout(function(){renderGrid();setupLazyLoad();},150);
+    renderHero();
+    startHero();
+    renderSidebar();
+    renderUpcoming();
+    bindAll();
+    updateStats();
+  }catch(e){
+    console.error('initApp error:',e);
+  }
+  killSplash();
+}
+
+// ===== BIND ALL EVENTS =====
 function bindAll(){
-  var catEl=document.getElementById('cat-filter');if(catEl)catEl.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;curFilter=b.getAttribute('data-cat');playClick();renderCats();renderGrid();setupLazyLoad();});
-  var gridEl=document.getElementById('channels-grid');if(gridEl)gridEl.addEventListener('click',function(e){var c=e.target.closest('.ch-card');if(!c)return;var id=parseInt(c.getAttribute('data-id')),ch=CHANNELS.find(function(x){return x.id===id;});if(ch){playClick();openPlayer(ch);}});
-  var hn=document.getElementById('hero-next'),hp=document.getElementById('hero-prev'),hd=document.getElementById('hero-dots'),hs=document.getElementById('hero-slides');
-  if(hn)hn.addEventListener('click',function(){goHero(heroIdx+1);});if(hp)hp.addEventListener('click',function(){goHero(heroIdx-1<0?4:heroIdx-1);});
-  if(hd)hd.addEventListener('click',function(e){var d=e.target.closest('span');if(!d)return;goHero(parseInt(d.getAttribute('data-idx')));});
-  if(hs)hs.addEventListener('click',function(e){var b=e.target.closest('.btn-watch');if(!b)return;var id=parseInt(b.getAttribute('data-id')),ch=CHANNELS.find(function(x){return x.id===id;});if(ch)openPlayer(ch);});
-  var pc=document.getElementById('player-close'),pm=document.getElementById('player-modal');if(pc)pc.addEventListener('click',closePlayer);if(pm)pm.addEventListener('click',function(e){if(e.target===this)closePlayer();});
-  var pp=document.getElementById('play-pause');if(pp)pp.addEventListener('click',function(){var v=document.getElementById('hls-video'),ic=this.querySelector('i');if(!v)return;if(v.paused){v.play().catch(function(){});ic.className='fas fa-pause';}else{v.pause();ic.className='fas fa-play';}});
-  var vb=document.getElementById('vol-btn'),vs=document.getElementById('vol-slider');
-  if(vb)vb.addEventListener('click',function(){var v=document.getElementById('hls-video'),ic=vb.querySelector('i');if(!v)return;if(v.muted){v.muted=false;vs.value=v.volume*100;ic.className='fas fa-volume-up';}else{v.muted=true;vs.value=0;ic.className='fas fa-volume-mute';}});
-  if(vs)vs.addEventListener('input',function(){var v=document.getElementById('hls-video');if(!v)return;var val=parseInt(this.value);v.volume=val/100;v.muted=val===0;var ic=vb?vb.querySelector('i'):null;if(ic){if(val===0)ic.className='fas fa-volume-mute';else if(val<50)ic.className='fas fa-volume-down';else ic.className='fas fa-volume-up';}});
-  var fsb=document.getElementById('fullscreen-btn');if(fsb)fsb.addEventListener('click',function(){var w=document.querySelector('.player-wrap');if(!w)return;if(document.fullscreenElement)document.exitFullscreen();else w.requestFullscreen().catch(function(){});});
-  var ab=document.getElementById('audio-btn');if(ab)ab.addEventListener('click',function(){showToast('Audio selection coming soon');});
-  var br=document.getElementById('btn-retry'),bs=document.getElementById('btn-switch');
-  if(br)br.addEventListener('click',function(){if(!curCh)return;retryCount=0;hideOffline();showSpinner();setStatus('connecting');startStream(curCh.s);});
-  if(bs)bs.addEventListener('click',function(){tryNext();});
-  var stb=document.getElementById('search-toggle'),sb=document.getElementById('search-box'),si=document.getElementById('search-input');
-  if(stb)stb.addEventListener('click',function(){if(sb){sb.classList.toggle('open');if(sb.classList.contains('open')&&si)si.focus();}});
-  if(si)si.addEventListener('input',function(){doSearch(this.value);});
-  var sdb=document.getElementById('sound-toggle');if(sdb)sdb.addEventListener('click',toggleSound);if(sdb&&soundEnabled)sdb.innerHTML='<i class="fas fa-volume-up"></i>';
-  var tids=['on-air-toggle','trending-toggle','mistral-toggle'];for(var t=0;t<tids.length;t++){(function(tid){var el=document.getElementById(tid);if(el)el.addEventListener('click',function(){this.classList.toggle('collapsed');var bd=this.nextElementSibling;if(bd)bd.classList.toggle('collapsed');});})(tids[t]);}
-  var oab=document.getElementById('on-air-body');if(oab)oab.addEventListener('click',function(e){var it=e.target.closest('.on-air-ch');if(!it)return;var id=parseInt(it.getAttribute('data-id')),ch=CHANNELS.find(function(x){return x.id===id;});if(ch)openPlayer(ch);});
-  var trb=document.getElementById('trending-body');if(trb)trb.addEventListener('click',function(e){var it=e.target.closest('.trending-item');if(!it)return;var id=parseInt(it.getAttribute('data-id')),ch=CHANNELS.find(function(x){return x.id===id;});if(ch)openPlayer(ch);});
-  var ucs=document.getElementById('upcoming-scroll');if(ucs)ucs.addEventListener('click',function(e){var c=e.target.closest('.upcoming-card');if(!c)return;var id=parseInt(c.getAttribute('data-id')),ch=CHANNELS.find(function(x){return x.id===id;});if(ch)openPlayer(ch);});
-  var nls=document.querySelectorAll('header nav a');for(var n=0;n<nls.length;n++){nls[n].addEventListener('click',function(e){e.preventDefault();for(var j=0;j<nls.length;j++)nls[j].classList.remove('active');this.classList.add('active');var nv=this.getAttribute('data-nav');curFilter=nv==='sports'?'sports':nv==='news'?'news':'all';renderCats();renderGrid();setupLazyLoad();var cs=document.getElementById('channels-section');if(cs)window.scrollTo({top:cs.offsetTop-80,behavior:'smooth'});});}
-  var msd=document.getElementById('mistral-send'),msi=document.getElementById('mistral-input');
-  if(msd)msd.addEventListener('click',function(){if(msi&&msi.value.trim())askMistral(msi.value.trim(),curCh?curCh.n+' ('+catLabel(curCh.c)+')':'');if(msi)msi.value='';});
-  if(msi)msi.addEventListener('keydown',function(e){if(e.key==='Enter'){if(this.value.trim())askMistral(this.value.trim(),curCh?curCh.n+' ('+catLabel(curCh.c)+')':'');this.value='';}});
+  // Category filter
+  var catEl=document.getElementById('cat-filter');
+  if(catEl)catEl.addEventListener('click',function(e){
+    var btn=e.target.closest('button');
+    if(!btn)return;
+    curFilter=btn.getAttribute('data-cat');
+    playClick();
+    renderCats();renderGrid();setupLazyLoad();
+  });
+
+  // Channel card click
+  var gridEl=document.getElementById('channels-grid');
+  if(gridEl)gridEl.addEventListener('click',function(e){
+    var card=e.target.closest('.ch-card');
+    if(!card)return;
+    var id=parseInt(card.getAttribute('data-id'));
+    var ch=CHANNELS.find(function(c){return c.id===id;});
+    if(ch){playClick();openPlayer(ch);}
+  });
+
+  // Hero controls
+  var heroNext=document.getElementById('hero-next');
+  var heroPrev=document.getElementById('hero-prev');
+  var heroDots=document.getElementById('hero-dots');
+  var heroSlides=document.getElementById('hero-slides');
+  if(heroNext)heroNext.addEventListener('click',function(){goHero(heroIdx+1);});
+  if(heroPrev)heroPrev.addEventListener('click',function(){goHero(heroIdx-1<0?4:heroIdx-1);});
+  if(heroDots)heroDots.addEventListener('click',function(e){
+    var dot=e.target.closest('span');if(!dot)return;
+    goHero(parseInt(dot.getAttribute('data-idx')));
+  });
+  if(heroSlides)heroSlides.addEventListener('click',function(e){
+    var btn=e.target.closest('.btn-watch');if(!btn)return;
+    var id=parseInt(btn.getAttribute('data-id'));
+    var ch=CHANNELS.find(function(c){return c.id===id;});
+    if(ch)openPlayer(ch);
+  });
+
+  // Player controls
+  var playerClose=document.getElementById('player-close');
+  var playerModal=document.getElementById('player-modal');
+  if(playerClose)playerClose.addEventListener('click',closePlayer);
+  if(playerModal)playerModal.addEventListener('click',function(e){if(e.target===this)closePlayer();});
+
+  var playPause=document.getElementById('play-pause');
+  if(playPause)playPause.addEventListener('click',function(){
+    var v=document.getElementById('hls-video');
+    var icon=this.querySelector('i');
+    if(!v)return;
+    if(v.paused){v.play().catch(function(){});icon.className='fas fa-pause';}
+    else{v.pause();icon.className='fas fa-play';}
+  });
+
+  var volBtn=document.getElementById('vol-btn');
+  var volSlider=document.getElementById('vol-slider');
+  if(volBtn)volBtn.addEventListener('click',function(){
+    var v=document.getElementById('hls-video');
+    var icon=volBtn.querySelector('i');
+    if(!v)return;
+    if(v.muted){v.muted=false;volSlider.value=v.volume*100;icon.className='fas fa-volume-up';}
+    else{v.muted=true;volSlider.value=0;icon.className='fas fa-volume-mute';}
+  });
+  if(volSlider)volSlider.addEventListener('input',function(){
+    var v=document.getElementById('hls-video');
+    if(!v)return;
+    var val=parseInt(this.value);
+    v.volume=val/100;v.muted=val===0;
+    var icon=volBtn?volBtn.querySelector('i'):null;
+    if(icon){
+      if(val===0)icon.className='fas fa-volume-mute';
+      else if(val<50)icon.className='fas fa-volume-down';
+      else icon.className='fas fa-volume-up';
+    }
+  });
+
+  var fullscreenBtn=document.getElementById('fullscreen-btn');
+  if(fullscreenBtn)fullscreenBtn.addEventListener('click',function(){
+    var wrap=document.querySelector('.player-wrap');
+    if(!wrap)return;
+    if(document.fullscreenElement)document.exitFullscreen();
+    else wrap.requestFullscreen().catch(function(){});
+  });
+
+  var audioBtn=document.getElementById('audio-btn');
+  if(audioBtn)audioBtn.addEventListener('click',function(){showToast('Audio selection coming soon');});
+
+  var btnRetry=document.getElementById('btn-retry');
+  var btnSwitch=document.getElementById('btn-switch');
+  if(btnRetry)btnRetry.addEventListener('click',function(){
+    if(!curCh)return;retryCount=0;hideOffline();showSpinnerEl();setStatus('connecting');startStream(curCh.s);
+  });
+  if(btnSwitch)btnSwitch.addEventListener('click',function(){tryNextInCategory();});
+
+  // Search
+  var searchToggle=document.getElementById('search-toggle');
+  var searchBox=document.getElementById('search-box');
+  var searchInput=document.getElementById('search-input');
+  if(searchToggle)searchToggle.addEventListener('click',function(){
+    if(searchBox){searchBox.classList.toggle('open');
+    if(searchBox.classList.contains('open')&&searchInput)searchInput.focus();}
+  });
+  if(searchInput)searchInput.addEventListener('input',function(){doSearch(this.value);});
+
+  // Sound toggle
+  var soundBtn=document.getElementById('sound-toggle');
+  if(soundBtn)soundBtn.addEventListener('click',toggleSound);
+  if(soundBtn&&soundEnabled)soundBtn.innerHTML='<i class="fas fa-volume-up"></i>';
+
+  // Sidebar toggles
+  var toggleIds=['on-air-toggle','trending-toggle','mistral-toggle'];
+  for(var t=0;t<toggleIds.length;t++){
+    (function(tid){
+      var el=document.getElementById(tid);
+      if(el)el.addEventListener('click',function(){
+        this.classList.toggle('collapsed');
+        var body=this.nextElementSibling;
+        if(body)body.classList.toggle('collapsed');
+      });
+    })(toggleIds[t]);
+  }
+
+  // Sidebar channel clicks
+  var onAirBody=document.getElementById('on-air-body');
+  if(onAirBody)onAirBody.addEventListener('click',function(e){
+    var item=e.target.closest('.on-air-ch');if(!item)return;
+    var id=parseInt(item.getAttribute('data-id'));
+    var ch=CHANNELS.find(function(c){return c.id===id;});
+    if(ch)openPlayer(ch);
+  });
+  var trendingBody=document.getElementById('trending-body');
+  if(trendingBody)trendingBody.addEventListener('click',function(e){
+    var item=e.target.closest('.trending-item');if(!item)return;
+    var id=parseInt(item.getAttribute('data-id'));
+    var ch=CHANNELS.find(function(c){return c.id===id;});
+    if(ch)openPlayer(ch);
+  });
+
+  // Upcoming clicks
+  var upcomingScroll=document.getElementById('upcoming-scroll');
+  if(upcomingScroll)upcomingScroll.addEventListener('click',function(e){
+    var card=e.target.closest('.upcoming-card');if(!card)return;
+    var id=parseInt(card.getAttribute('data-id'));
+    var ch=CHANNELS.find(function(c){return c.id===id;});
+    if(ch)openPlayer(ch);
+  });
+
+  // Nav links
+  var navLinks=document.querySelectorAll('header nav a');
+  for(var n=0;n<navLinks.length;n++){
+    navLinks[n].addEventListener('click',function(e){
+      e.preventDefault();
+      for(var j=0;j<navLinks.length;j++)navLinks[j].classList.remove('active');
+      this.classList.add('active');
+      var nav=this.getAttribute('data-nav');
+      if(nav==='sports')curFilter='sports';
+      else if(nav==='news')curFilter='news';
+      else curFilter='all';
+      renderCats();renderGrid();setupLazyLoad();
+      var chSec=document.getElementById('channels-section');
+      if(chSec)window.scrollTo({top:chSec.offsetTop-80,behavior:'smooth'});
+    });
+  }
+
+  // Mistral send
+  var mistralSend=document.getElementById('mistral-send');
+  var mistralInput=document.getElementById('mistral-input');
+  if(mistralSend)mistralSend.addEventListener('click',function(){
+    if(mistralInput&&mistralInput.value.trim())askMistral(mistralInput.value.trim(),curCh?curCh.n+' ('+catLabel(curCh.c)+')':'');
+    if(mistralInput)mistralInput.value='';
+  });
+  if(mistralInput)mistralInput.addEventListener('keydown',function(e){
+    if(e.key==='Enter'){
+      if(this.value.trim())askMistral(this.value.trim(),curCh?curCh.n+' ('+catLabel(curCh.c)+')':'');
+      this.value='';
+    }
+  });
+
+  // ESC to close player
   document.addEventListener('keydown',function(e){if(e.key==='Escape')closePlayer();});
 }
 
-try{initApp();}catch(e){console.error('BOOT:',e);killSplash();}
+// ===== BOOT =====
+try{initApp();}catch(e){console.error('BOOT error:',e);killSplash();}
+
 })();
 <\/script>
 </body>
 </html>`;
 
     return new Response(html, {
-      headers: { 'Content-Type': 'text/html;charset=UTF-8', 'Cache-Control': 'no-cache' }
+      headers: {
+        'Content-Type': 'text/html;charset=UTF-8',
+        'Cache-Control': 'no-cache'
+      }
     });
+
+    } catch(err) {
+      return new Response('EDGE TV Error: ' + err.message, {
+        status: 500,
+        headers: { 'Content-Type': 'text/plain;charset=UTF-8' }
+      });
+    }
   }
 };
