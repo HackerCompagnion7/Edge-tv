@@ -192,13 +192,13 @@ header nav a.active::after{content:'';position:absolute;bottom:-2px;left:0;width
 #search-box input{width:100%;background:var(--elevated);border:1px solid rgba(255,255,255,0.1);border-radius:var(--radius-input);padding:10px 14px;color:var(--white);font-size:13px;font-family:var(--font-body)}
 #search-box input:focus{border-color:rgba(255,255,255,0.25);outline:none}
 
-.hero{position:relative;width:100%;height:420px;overflow:hidden;background:linear-gradient(135deg,var(--surface) 0%,#1a1a1a 50%,var(--surface) 100%)}
+.hero{position:relative;width:100%;height:500px;overflow:hidden;background:linear-gradient(135deg,var(--surface) 0%,#1a1a1a 50%,var(--surface) 100%)}
 .hero-slide{position:absolute;inset:0;opacity:0;transition:opacity 1.2s ease;display:flex;align-items:center}
 .hero-slide.active{opacity:1}
-.hero-slide .slide-bg{position:absolute;inset:0;background-size:cover;background-position:center;filter:brightness(0.2) saturate(1.3) blur(1px)}
+.hero-slide .slide-bg{position:absolute;inset:0;background-size:cover;background-position:center;filter:brightness(0.35) saturate(1.5)}
 .hero-slide.active .slide-bg{animation:kenBurns 20s ease-in-out infinite alternate}
 @keyframes kenBurns{0%{transform:scale(1)}100%{transform:scale(1.06)}}
-.hero-slide .slide-grad{position:absolute;inset:0;background:linear-gradient(90deg,rgba(11,11,11,0.95) 0%,rgba(11,11,11,0.75) 40%,rgba(11,11,11,0.35) 70%,transparent 100%)}
+.hero-slide .slide-grad{position:absolute;inset:0;background:linear-gradient(90deg,rgba(11,11,11,0.92) 0%,rgba(11,11,11,0.7) 35%,rgba(11,11,11,0.3) 65%,transparent 100%);pointer-events:none}.hero-slide .slide-grad2{position:absolute;inset:0;background:linear-gradient(0deg,rgba(11,11,11,0.9) 0%,rgba(11,11,11,0.4) 30%,transparent 60%);pointer-events:none}
 .hero-slide .slide-content{position:relative;z-index:2;padding:0 60px;max-width:680px}
 .slide-label{font-family:var(--font-display);font-size:10px;letter-spacing:4px;color:var(--red);text-transform:uppercase;margin-bottom:10px;font-weight:700}
 .slide-title{font-family:var(--font-display);font-size:34px;font-weight:700;margin-bottom:10px;line-height:1.2;color:var(--white)}
@@ -228,12 +228,12 @@ header nav a.active::after{content:'';position:absolute;bottom:-2px;left:0;width
 .ch-card{background:var(--surface);border-radius:var(--radius-card);overflow:hidden;border:1px solid rgba(255,255,255,0.04);transition:transform 240ms ease,box-shadow 240ms ease;position:relative;cursor:pointer;opacity:0;transform:translateY(10px)}
 .ch-card.visible{opacity:1;transform:translateY(0);transition:opacity 300ms ease,transform 300ms ease}
 .ch-card:hover{transform:translateY(-4px) scale(1.03);border-color:rgba(255,255,255,0.1);box-shadow:var(--shadow-hover)}
-.ch-card .ch-thumb{width:100%;height:180px;position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center}
-.ch-card .ch-thumb-img{position:absolute;inset:0;background-size:cover;background-position:center;filter:brightness(0.35) saturate(1.4);transition:filter 400ms ease,transform 400ms ease}
-.ch-card:hover .ch-thumb-img{filter:brightness(0.5) saturate(1.6);transform:scale(1.08)}
-.ch-card .ch-thumb-overlay{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0.1) 0%,rgba(0,0,0,0.5) 40%,rgba(0,0,0,0.9) 100%);z-index:1}
+.ch-card .ch-thumb{width:100%;height:220px;position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.ch-card .ch-thumb-img{position:absolute;inset:0;background-size:cover;background-position:center;filter:brightness(0.55) saturate(1.5);transition:filter 400ms ease,transform 400ms ease}
+.ch-card:hover .ch-thumb-img{filter:brightness(0.7) saturate(1.7);transform:scale(1.08)}
+.ch-card .ch-thumb-overlay{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0.05) 0%,rgba(0,0,0,0.15) 40%,rgba(0,0,0,0.85) 75%,rgba(0,0,0,0.95) 100%);z-index:1}
 .ch-card .ch-thumb-icon{position:relative;z-index:2;font-size:32px;color:rgba(255,255,255,0.12);margin-bottom:4px}
-.ch-card .ch-thumb-label{font-family:var(--font-body);font-size:12px;color:rgba(255,255,255,0.95);letter-spacing:1px;text-align:center;padding:10px;word-break:break-word;position:relative;z-index:2;text-shadow:0 2px 12px rgba(0,0,0,0.8);font-weight:600}
+.ch-card .ch-thumb-label{font-family:var(--font-body);font-size:14px;color:rgba(255,255,255,1);letter-spacing:0.5px;text-align:center;padding:8px;word-break:break-word;position:relative;z-index:2;text-shadow:0 2px 16px rgba(0,0,0,0.9),0 1px 4px rgba(0,0,0,0.7);font-weight:700}
 .ch-card .ch-logo{position:relative;z-index:2;height:60px;width:auto;max-width:140px;object-fit:contain;filter:drop-shadow(0 2px 8px rgba(0,0,0,0.6))}
 .ch-card .ch-logo-fb{position:relative;z-index:2;width:56px;height:56px;border-radius:14px;color:#fff;font-size:22px;font-weight:900;display:none;align-items:center;justify-content:center;font-family:var(--font-display);letter-spacing:1px;filter:drop-shadow(0 2px 8px rgba(0,0,0,0.6))}
 .ch-card .ch-thumb-src{font-family:var(--font-body);font-size:9px;color:rgba(255,255,255,0.5);letter-spacing:1px;text-align:center;position:relative;z-index:2;margin-top:-4px;text-transform:uppercase}
@@ -370,12 +370,12 @@ footer .f-stats .stat strong{color:var(--white);font-family:var(--font-display)}
 @media(max-width:1024px){
   .main-layout{flex-direction:column}.sidebar{width:100%}
   .channels-grid{grid-template-columns:repeat(auto-fill,minmax(200px,1fr))}
-  .hero{height:360px}.slide-title{font-size:28px}
+  .hero{height:420px}.slide-title{font-size:28px}
 }
 @media(max-width:640px){
   .channels-grid{grid-template-columns:1fr 1fr}
   header nav a span{display:none}header{padding:0 16px}
-  .hero{height:280px}.slide-title{font-size:22px}.slide-desc{display:none}
+  .hero{height:320px}.slide-title{font-size:22px}.slide-desc{display:none}
   .vol-slider{width:50px}
 }
 </style>
@@ -388,7 +388,7 @@ footer .f-stats .stat strong{color:var(--white);font-family:var(--font-display)}
 <div class="main-layout"><main class="main-content"><section id="continue-section" style="display:none"><h2 class="section-title"><span class="st-bar"></span>Continue Watching<span class="st-badge" id="cw-count">0</span></h2><div class="cw-scroll" id="cw-scroll"></div></section><section id="channels-section"><h2 class="section-title"><span class="st-bar"></span>Canales en Vivo<span class="st-count" id="ch-count"></span></h2><div class="cat-filter" id="cat-filter"></div><div class="channels-grid" id="channels-grid"></div></section><section id="upcoming-section" style="margin-top:40px"><h2 class="section-title"><span class="st-bar"></span>Coming Up</h2><div class="upcoming-scroll" id="upcoming-scroll"></div></section></main><aside class="sidebar"><div class="sidebar-section"><div class="sidebar-toggle" id="on-air-toggle"><h3><i class="fas fa-broadcast-tower"></i>En Vivo Ahora</h3><i class="fas fa-chevron-down chevron"></i></div><div class="sidebar-body" id="on-air-body"></div></div><div class="sidebar-section"><div class="sidebar-toggle" id="trending-toggle"><h3><i class="fas fa-fire"></i>Tendencias</h3><i class="fas fa-chevron-down chevron"></i></div><div class="sidebar-body" id="trending-body"></div></div><div class="sidebar-section"><div class="sidebar-toggle" id="mistral-toggle"><h3><i class="fas fa-robot"></i>Asistente IA</h3><i class="fas fa-chevron-down chevron"></i></div><div class="sidebar-body" id="mistral-body"><div class="mp-chat"><div class="mp-msg" id="mistral-msg">Preguntame sobre canales!</div><div class="mp-input-wrap"><input class="mp-input" id="mistral-input" placeholder="Pregunta sobre canales..."><button class="mp-send" id="mistral-send"><i class="fas fa-paper-plane"></i></button></div></div></div></div></aside></div>
 <div id="player-modal"><div class="player-wrap"><button class="player-close" id="player-close"><i class="fas fa-times"></i></button><video id="hls-video" muted playsinline></video><div class="player-spinner" id="player-spinner"><div class="spinner-ring"></div></div><div class="buffering-overlay" id="buffering-overlay"><div class="buffer-pulse"></div></div><div class="offline-overlay" id="offline-overlay"><i class="fas fa-signal off-icon"></i><div class="off-text">CANAL OFFLINE</div><div class="off-hint">Este canal puede estar bloqueado. Prueba otro o usa VPN.</div><button class="btn-retry" id="btn-retry"><i class="fas fa-redo"></i> Reintentar</button><button class="btn-switch" id="btn-switch"><i class="fas fa-exchange-alt"></i> Siguiente Canal</button></div><div class="player-bar"><button id="play-pause"><i class="fas fa-play"></i></button><button id="vol-btn"><i class="fas fa-volume-mute"></i></button><input type="range" id="vol-slider" min="0" max="100" value="0" class="vol-slider"><span class="p-title" id="player-title">-</span><span class="p-quality" id="quality-indicator">HD</span><span class="p-status connecting" id="player-status">CONNECTING</span><button id="audio-btn"><i class="fas fa-headphones"></i></button><button id="fullscreen-btn"><i class="fas fa-expand"></i></button></div></div></div>
 <div class="toast" id="toast"></div>
-<footer><div class="f-brand">EDGE <span>v6.0</span> &mdash; IPTV 100% Gratis</div><div class="f-stats"><div class="stat"><strong id="stat-ch">211</strong> canales</div><div class="stat"><strong id="stat-hd">211</strong> HD</div><div class="stat"><strong>5</strong> categorias</div></div></footer>
+<footer><div class="f-brand">EDGE <span>v7.0</span> &mdash; IPTV 100% Gratis</div><div class="f-stats"><div class="stat"><strong id="stat-ch">211</strong> canales</div><div class="stat"><strong id="stat-hd">211</strong> HD</div><div class="stat"><strong>5</strong> categorias</div></div></footer>
 <script>
 (function(){function k(){var s=document.getElementById('splash');if(s)s.classList.add('hide');}setTimeout(k,2500);setTimeout(k,3500);setTimeout(k,5000);document.addEventListener('DOMContentLoaded',function(){setTimeout(k,800);});window.addEventListener('load',function(){setTimeout(k,300);});window.onerror=function(){k();return true;};})();
 <\/script>
@@ -643,25 +643,167 @@ function fmtV(v){return v>=1000?(v/1000).toFixed(1)+'K':v.toString();}
 function catLabel(c){for(var i=0;i<CATS.length;i++){if(CATS[i].id===c)return CATS[i].label;}return c;}
 function ini(n){return n.replace(/[^A-Za-z0-9]/g,'').substring(0,2).toUpperCase();}
 
-// Poster/Thumbnail system: auto-generate real images for channels
+// Poster/Thumbnail system: real images for every channel
 function getPlutoId(ch){var m=ch.s.match(/plu-([a-f0-9]+)/i);return m?m[1]:null;}
 function getPosterUrl(ch){
   if(ch.poster)return ch.poster;
+  // Pluto TV channels: use full poster-quality featured image instead of just logo
+  var pid=getPlutoId(ch);
+  if(pid)return'https://images.pluto.tv/channels/'+pid+'/featuredImage.jpg';
+  return'';
+}
+function getLogoUrl(ch){
+  if(ch.logo)return ch.logo;
   var pid=getPlutoId(ch);
   if(pid)return'https://images.pluto.tv/channels/'+pid+'/colorLogoPNG.png';
   return'';
 }
 function getHeroBgUrl(ch){
+  if(ch.poster)return ch.poster;
   var pid=getPlutoId(ch);
   if(pid)return'https://images.pluto.tv/channels/'+pid+'/featuredImage.jpg';
   return'';
 }
-// Category-specific background images for non-Pluto channels
+// Channel-specific thematic images (by channel name keywords)
+var CH_POSTERS={
+  'action':'https://images.unsplash.com/photo-1535016120720-40c646be5580?w=600&h=400&fit=crop',
+  'adrenalina':'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=600&h=400&fit=crop',
+  'comedia':'https://images.unsplash.com/photo-1527224857830-43a7acc85260?w=600&h=400&fit=crop',
+  'terror':'https://images.unsplash.com/photo-1509248961895-40b5adb63568?w=600&h=400&fit=crop',
+  'horror':'https://images.unsplash.com/photo-1509248961895-40b5adb63568?w=600&h=400&fit=crop',
+  'romance':'https://images.unsplash.com/photo-1518199266791-5375a83190b7?w=600&h=400&fit=crop',
+  'romantico':'https://images.unsplash.com/photo-1518199266791-5375a83190b7?w=600&h=400&fit=crop',
+  'drama':'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=600&h=400&fit=crop',
+  'thriller':'https://images.unsplash.com/photo-1478720568477-152d9b164e26?w=600&h=400&fit=crop',
+  'western':'https://images.unsplash.com/photo-1495312040802-a929cd14a6ab?w=600&h=400&fit=crop',
+  'crime':'https://images.unsplash.com/photo-1474314005122-3c07c4df1224?w=600&h=400&fit=crop',
+  'classic':'https://images.unsplash.com/photo-1440404653325-ab127d49abc1?w=600&h=400&fit=crop',
+  'clasico':'https://images.unsplash.com/photo-1440404653325-ab127d49abc1?w=600&h=400&fit=crop',
+  'premiere':'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=600&h=400&fit=crop',
+  'cult':'https://images.unsplash.com/photo-1535016120720-40c646be5580?w=600&h=400&fit=crop',
+  'spotlight':'https://images.unsplash.com/photo-1594909122845-11baa439b7bf?w=600&h=400&fit=crop',
+  'sony':'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=600&h=400&fit=crop',
+  'paramount':'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=600&h=400&fit=crop',
+  'lionsgate':'https://images.unsplash.com/photo-1535016120720-40c646be5580?w=600&h=400&fit=crop',
+  'charge':'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=600&h=400&fit=crop',
+  'dust':'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=600&h=400&fit=crop',
+  'alien':'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=600&h=400&fit=crop',
+  'indie':'https://images.unsplash.com/photo-1440404653325-ab127d49abc1?w=600&h=400&fit=crop',
+  'gravitas':'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=600&h=400&fit=crop',
+  'filmax':'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=600&h=400&fit=crop',
+  'friki':'https://images.unsplash.com/photo-1535016120720-40c646be5580?w=600&h=400&fit=crop',
+  'runtime':'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=600&h=400&fit=crop',
+  'bet':'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=600&h=400&fit=crop',
+  'flicks':'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=600&h=400&fit=crop',
+  'sphere':'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=600&h=400&fit=crop',
+  'dome':'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=600&h=400&fit=crop',
+  'france':'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=600&h=400&fit=crop',
+  'french':'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=600&h=400&fit=crop',
+  'tv5':'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=600&h=400&fit=crop',
+  'bfm':'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=600&h=400&fit=crop',
+  'rtl':'https://images.unsplash.com/photo-1550340499-a6c60fc8287c?w=600&h=400&fit=crop',
+  'euronews':'https://images.unsplash.com/photo-1504711434969-e33886168d6c?w=600&h=400&fit=crop',
+  'africanews':'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=600&h=400&fit=crop',
+  'equidia':'https://images.unsplash.com/photo-1552674605-db6ffd4facb5?w=600&h=400&fit=crop',
+  'disney':'https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?w=600&h=400&fit=crop',
+  'nickelodeon':'https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?w=600&h=400&fit=crop',
+  'nick':'https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?w=600&h=400&fit=crop',
+  'pbs':'https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?w=600&h=400&fit=crop',
+  'kids':'https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?w=600&h=400&fit=crop',
+  'baby':'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=600&h=400&fit=crop',
+  'pokemon':'https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?w=600&h=400&fit=crop',
+  'tom and jerry':'https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?w=600&h=400&fit=crop',
+  'teletubbies':'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=600&h=400&fit=crop',
+  'spongebob':'https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?w=600&h=400&fit=crop',
+  'avatar':'https://images.unsplash.com/photo-1519457431-44ccd64a579b?w=600&h=400&fit=crop',
+  'garfield':'https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?w=600&h=400&fit=crop',
+  'chavo':'https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?w=600&h=400&fit=crop',
+  'lego':'https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?w=600&h=400&fit=crop',
+  'shark':'https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?w=600&h=400&fit=crop',
+  'turtle':'https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?w=600&h=400&fit=crop',
+  'ninja':'https://images.unsplash.com/photo-1519457431-44ccd64a579b?w=600&h=400&fit=crop',
+  'sabrina':'https://images.unsplash.com/photo-1519457431-44ccd64a579b?w=600&h=400&fit=crop',
+  'bean':'https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?w=600&h=400&fit=crop',
+  'monica':'https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?w=600&h=400&fit=crop',
+  'reino':'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=600&h=400&fit=crop',
+  'kika':'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=600&h=400&fit=crop',
+  'clan':'https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?w=600&h=400&fit=crop',
+  'minimax':'https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?w=600&h=400&fit=crop',
+  'carousel':'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=600&h=400&fit=crop',
+  'trt':'https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?w=600&h=400&fit=crop',
+  'balapan':'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=600&h=400&fit=crop',
+  'south park':'https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?w=600&h=400&fit=crop',
+  'one piece':'https://images.unsplash.com/photo-1519457431-44ccd64a579b?w=600&h=400&fit=crop',
+  'caillou':'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=600&h=400&fit=crop',
+  'cartoon':'https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?w=600&h=400&fit=crop',
+  'toon':'https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?w=600&h=400&fit=crop',
+  'retro':'https://images.unsplash.com/photo-1472162072942-cd5147eb3902?w=600&h=400&fit=crop',
+  'ryan':'https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?w=600&h=400&fit=crop',
+  'zoo':'https://images.unsplash.com/photo-1474511320723-9a56873571b7?w=600&h=400&fit=crop',
+  'brat':'https://images.unsplash.com/photo-1519457431-44ccd64a579b?w=600&h=400&fit=crop',
+  'simple':'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=600&h=400&fit=crop',
+  'moonbug':'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=600&h=400&fit=crop',
+  'happy':'https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?w=600&h=400&fit=crop',
+  'kartoon':'https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?w=600&h=400&fit=crop',
+  'kidsflix':'https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?w=600&h=400&fit=crop',
+  'deluxe':'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=600&h=400&fit=crop',
+  'rap':'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=600&h=400&fit=crop',
+  'dance':'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=600&h=400&fit=crop',
+  'mtv':'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=600&h=400&fit=crop',
+  'now 70':'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&h=400&fit=crop',
+  'now 80':'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&h=400&fit=crop',
+  'now 90':'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=600&h=400&fit=crop',
+  'rock':'https://images.unsplash.com/photo-1498038432885-c6f3f1b912ee?w=600&h=400&fit=crop',
+  'stingray':'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=600&h=400&fit=crop',
+  'vevo':'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=600&h=400&fit=crop',
+  'jazz':'https://images.unsplash.com/photo-1511192336575-5a79af67a629?w=600&h=400&fit=crop',
+  'classica':'https://images.unsplash.com/photo-1465847899084-d164df4dedc6?w=600&h=400&fit=crop',
+  'karaoke':'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&h=400&fit=crop',
+  'concert':'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=600&h=400&fit=crop',
+  'qwest':'https://images.unsplash.com/photo-1511192336575-5a79af67a629?w=600&h=400&fit=crop',
+  'festival':'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=600&h=400&fit=crop',
+  'energeek':'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=600&h=400&fit=crop',
+  'cumbia':'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=600&h=400&fit=crop',
+  'kalle':'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=600&h=400&fit=crop',
+  'sol':'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=600&h=400&fit=crop',
+  'musica':'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=600&h=400&fit=crop',
+  'kronehit':'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=600&h=400&fit=crop',
+  'retro':'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&h=400&fit=crop',
+  'europa':'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=600&h=400&fit=crop',
+  'trace':'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=600&h=400&fit=crop',
+  'fashion':'https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=600&h=400&fit=crop',
+  'voyage':'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=600&h=400&fit=crop',
+  'clubbing':'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=600&h=400&fit=crop',
+  'zylo':'https://images.unsplash.com/photo-1478720568477-152d9b164e26?w=600&h=400&fit=crop',
+  'kral':'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=600&h=400&fit=crop',
+  'power':'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=600&h=400&fit=crop',
+  'muzik':'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=600&h=400&fit=crop',
+  'navahang':'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=600&h=400&fit=crop',
+  'persiana':'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=600&h=400&fit=crop',
+  'pmc':'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=600&h=400&fit=crop',
+  'javan':'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=600&h=400&fit=crop',
+  'aghani':'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=600&h=400&fit=crop',
+  'dream':'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=600&h=400&fit=crop',
+  'tiji':'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=600&h=400&fit=crop',
+  'gulli':'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=600&h=400&fit=crop',
+  'dock':'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=600&h=400&fit=crop',
+  'spain':'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=600&h=400&fit=crop',
+  'africa':'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=600&h=400&fit=crop',
+  'medi':'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=600&h=400&fit=crop'
+};
+function getChPoster(ch){
+  var pid=getPlutoId(ch);
+  if(pid)return'https://images.pluto.tv/channels/'+pid+'/featuredImage.jpg';
+  var nl=ch.n.toLowerCase();
+  for(var k in CH_POSTERS){if(nl.indexOf(k)>=0)return CH_POSTERS[k];}
+  return'';
+}
+// Category-specific background images for fallback
 var CAT_BG={
-  movies:['https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=600&h=400&fit=crop','https://images.unsplash.com/photo-1440404653325-ab127d49abc1?w=600&h=400&fit=crop','https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=600&h=400&fit=crop','https://images.unsplash.com/photo-1535016120720-40c646be5580?w=600&h=400&fit=crop','https://images.unsplash.com/photo-1594909122845-11baa439b7bf?w=600&h=400&fit=crop'],
-  french:['https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=600&h=400&fit=crop','https://images.unsplash.com/photo-1550340499-a6c60fc8287c?w=600&h=400&fit=crop','https://images.unsplash.com/photo-1499856871958-5b9627545d1a?w=600&h=400&fit=crop'],
-  kids:['https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?w=600&h=400&fit=crop','https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?w=600&h=400&fit=crop','https://images.unsplash.com/photo-1519457431-44ccd64a579b?w=600&h=400&fit=crop','https://images.unsplash.com/photo-1472162072942-cd5147eb3902?w=600&h=400&fit=crop'],
-  music:['https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=600&h=400&fit=crop','https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=600&h=400&fit=crop','https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=600&h=400&fit=crop','https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&h=400&fit=crop']
+  movies:['https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=600&h=400&fit=crop','https://images.unsplash.com/photo-1440404653325-ab127d49abc1?w=600&h=400&fit=crop','https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=600&h=400&fit=crop','https://images.unsplash.com/photo-1535016120720-40c646be5580?w=600&h=400&fit=crop','https://images.unsplash.com/photo-1594909122845-11baa439b7bf?w=600&h=400&fit=crop','https://images.unsplash.com/photo-1534447677768-be436bb09401?w=600&h=400&fit=crop','https://images.unsplash.com/photo-1478720568477-152d9b164e26?w=600&h=400&fit=crop'],
+  french:['https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=600&h=400&fit=crop','https://images.unsplash.com/photo-1550340499-a6c60fc8287c?w=600&h=400&fit=crop','https://images.unsplash.com/photo-1499856871958-5b9627545d1a?w=600&h=400&fit=crop','https://images.unsplash.com/photo-1504711434969-e33886168d6c?w=600&h=400&fit=crop'],
+  kids:['https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?w=600&h=400&fit=crop','https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?w=600&h=400&fit=crop','https://images.unsplash.com/photo-1519457431-44ccd64a579b?w=600&h=400&fit=crop','https://images.unsplash.com/photo-1472162072942-cd5147eb3902?w=600&h=400&fit=crop','https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=600&h=400&fit=crop'],
+  music:['https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=600&h=400&fit=crop','https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=600&h=400&fit=crop','https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=600&h=400&fit=crop','https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&h=400&fit=crop','https://images.unsplash.com/photo-1498038432885-c6f3f1b912ee?w=600&h=400&fit=crop','https://images.unsplash.com/photo-1511192336575-5a79af67a629?w=600&h=400&fit=crop']
 };
 function getCatBg(ch){
   var arr=CAT_BG[ch.c];
@@ -669,9 +811,9 @@ function getCatBg(ch){
   var idx=0;for(var i=0;i<ch.n.length;i++)idx=(idx+ch.n.charCodeAt(i))%arr.length;
   return arr[idx];
 }
-// Build card background style: poster > category image > gradient
+// Build card background style: channel poster > category image > gradient
 function cardBgStyle(ch){
-  var poster=getPosterUrl(ch);
+  var poster=getPosterUrl(ch)||getChPoster(ch);
   var catBg=getCatBg(ch);
   var cg=CAT_GRAD[ch.c]||CAT_GRAD.news;
   if(poster)return'background:url('+poster+') center/cover,no-repeat,'+cg;
@@ -680,7 +822,7 @@ function cardBgStyle(ch){
 }
 // Build hero background style
 function heroBgStyle(ch){
-  var heroBg=getHeroBgUrl(ch);
+  var heroBg=getHeroBgUrl(ch)||getChPoster(ch);
   var catBg=getCatBg(ch);
   var cg=CAT_GRAD[ch.c]||CAT_GRAD.news;
   if(heroBg)return'background:url('+heroBg+') center/cover,no-repeat,'+cg;
@@ -689,7 +831,7 @@ function heroBgStyle(ch){
 }
 
 // Logo: img with data attrs, fix broken ones via JS after render (NO inline onerror)
-function logoImg(ch,cls){return ch.logo?'<img class="'+cls+'" src="'+ch.logo+'" alt="'+esc(ch.n)+'" data-clr="'+ch.clr+'" data-ini="'+ini(ch.n)+'">':'';}
+function logoImg(ch,cls){var lu=getLogoUrl(ch);return lu?'<img class="'+cls+'" src="'+lu+'" alt="'+esc(ch.n)+'" data-clr="'+ch.clr+'" data-ini="'+ini(ch.n)+'">':'';}
 function logoFB(ch,cls,sz){var s=sz||56,fs=Math.round(s*0.39),br=Math.round(s*0.25);return '<div class="'+cls+'" style="width:'+s+'px;height:'+s+'px;border-radius:'+br+'px;background:'+ch.clr+';color:#fff;font-size:'+fs+'px;font-weight:900;display:none;align-items:center;justify-content:center;font-family:var(--font-display);letter-spacing:1px">'+ini(ch.n)+'</div>';}
 
 function fixLogos(){
@@ -725,7 +867,7 @@ function renderGrid(){
   for(var i=0;i<list.length;i++){var ch=list[i],cg=CAT_GRAD[ch.c]||CAT_GRAD.news,ci=CAT_ICON[ch.c]||'fa-tv';
     var sl=scoreLabel(ch.id),sc=getScore(ch.id);
     var scoreHtml=sl==='new'?'<span class="ch-score untested"><i class="fas fa-circle" style="font-size:5px"></i> NEW</span>':sl==='stable'?'<span class="ch-score stable"><i class="fas fa-check-circle" style="font-size:7px"></i> '+Math.round(sc.ok/(sc.ok+sc.fail)*100)+'%</span>':sl==='unstable'?'<span class="ch-score unstable"><i class="fas fa-exclamation-circle" style="font-size:7px"></i> '+Math.round(sc.ok/(sc.ok+sc.fail)*100)+'%</span>':'';
-    h+='<div class="ch-card" data-id="'+ch.id+'"><div class="ch-thumb"><div class="ch-thumb-img" style="'+cardBgStyle(ch)+'"></div><div class="ch-mini-preview" style="background:linear-gradient(45deg,'+ch.clr+'22,'+ch.clr+'44,'+ch.clr+'22)"></div><div class="ch-thumb-overlay"></div>'+logoImg(ch,'ch-logo')+logoFB(ch,'ch-logo-fb')+(ch.logo?'':'<i class="fas '+ci+' ch-thumb-icon"></i>')+'<div class="ch-thumb-label">'+esc(ch.n)+'</div><div class="ch-thumb-src">'+esc(ch.src)+'</div><span class="live-badge">LIVE</span>'+scoreHtml+'<span class="ch-viewers"><i class="fas fa-eye"></i> '+fmtV(ch.v)+'</span><span class="ch-cat-tag">'+catLabel(ch.c)+'</span><div class="ch-play"><i class="fas fa-play"></i></div></div><div class="ch-body"><div class="ch-name">'+esc(ch.n)+'</div><div class="ch-desc">'+esc(ch.d)+'</div></div></div>';}
+    h+='<div class="ch-card" data-id="'+ch.id+'"><div class="ch-thumb"><div class="ch-thumb-img" style="'+cardBgStyle(ch)+'"></div><div class="ch-mini-preview" style="background:linear-gradient(45deg,'+ch.clr+'22,'+ch.clr+'44,'+ch.clr+'22)"></div><div class="ch-thumb-overlay"></div><i class="fas '+ci+' ch-thumb-icon"></i>'+logoImg(ch,'ch-logo')+logoFB(ch,'ch-logo-fb')+'<div class="ch-thumb-label">'+esc(ch.n)+'</div><span class="live-badge">LIVE</span>'+scoreHtml+'<span class="ch-viewers"><i class="fas fa-eye"></i> '+fmtV(ch.v)+'</span><span class="ch-cat-tag">'+catLabel(ch.c)+'</span><div class="ch-play"><i class="fas fa-play"></i></div></div><div class="ch-body"><div class="ch-name">'+esc(ch.n)+'</div><div class="ch-desc">'+esc(ch.d)+'</div></div></div>';}
   grid.innerHTML=h;setTimeout(fixLogos,100);
 }
 
@@ -739,7 +881,7 @@ function renderHero(){
   var feat=CHANNELS.slice().sort(function(a,b){return b.v-a.v;}).slice(0,5),se=document.getElementById('hero-slides'),de=document.getElementById('hero-dots');
   if(!se||!de)return;var sh='',dh='';
   for(var i=0;i<feat.length;i++){var ch=feat[i],ia=i===0?'active':'';
-    sh+='<div class="hero-slide '+ia+'" data-idx="'+i+'"><div class="slide-bg" style="'+heroBgStyle(ch)+'"></div><div class="slide-grad"></div><div class="slide-content"><div class="slide-label">NOW STREAMING</div>'+logoImg(ch,'slide-logo')+logoFB(ch,'slide-logo-fb',50)+'<h2 class="slide-title">'+esc(ch.n)+'</h2><p class="slide-desc">'+esc(ch.d)+'</p><div class="slide-meta"><span class="meta-badge dur"><i class="fas fa-clock" style="margin-right:3px"></i>24/7</span><span class="meta-badge qual">'+ch.q+'</span><span class="meta-badge cat">'+catLabel(ch.c)+'</span><span class="meta-badge src">'+esc(ch.src)+'</span></div><button class="btn-watch" data-id="'+ch.id+'"><i class="fas fa-play"></i> Watch Now</button></div></div>';
+    sh+='<div class="hero-slide '+ia+'" data-idx="'+i+'"><div class="slide-bg" style="'+heroBgStyle(ch)+'"></div><div class="slide-grad"></div><div class="slide-grad2"></div><div class="slide-content"><div class="slide-label">NOW STREAMING</div>'+logoImg(ch,'slide-logo')+logoFB(ch,'slide-logo-fb',50)+'<h2 class="slide-title">'+esc(ch.n)+'</h2><p class="slide-desc">'+esc(ch.d)+'</p><div class="slide-meta"><span class="meta-badge dur"><i class="fas fa-clock" style="margin-right:3px"></i>24/7</span><span class="meta-badge qual">'+ch.q+'</span><span class="meta-badge cat">'+catLabel(ch.c)+'</span><span class="meta-badge src">'+esc(ch.src)+'</span></div><button class="btn-watch" data-id="'+ch.id+'"><i class="fas fa-play"></i> Watch Now</button></div></div>';
     dh+='<span data-idx="'+i+'" class="'+(i===0?'active':'')+'"></span>';}
   se.innerHTML=sh;de.innerHTML=dh;setTimeout(fixLogos,100);
 }
@@ -839,7 +981,7 @@ function showToast(msg){var e=document.getElementById('toast');if(!e)return;e.te
 
 function toggleSound(){soundEnabled=!soundEnabled;try{localStorage.setItem('edge-sound',soundEnabled?'on':'off');}catch(e){}var b=document.getElementById('sound-toggle');if(b)b.innerHTML=soundEnabled?'<i class="fas fa-volume-up"></i>':'<i class="fas fa-volume-mute"></i>';if(soundEnabled&&!audioCtx)initAudio();showToast(soundEnabled?'Sound on':'Sound off');}
 
-function doSearch(q){q=q.toLowerCase().trim();if(!q){curFilter='all';renderGrid();setupLazyLoad();renderCats();return;}var r=CHANNELS.filter(function(ch){return ch.n.toLowerCase().indexOf(q)>=0||ch.c.indexOf(q)>=0||ch.src.toLowerCase().indexOf(q)>=0||ch.d.toLowerCase().indexOf(q)>=0;});var g=document.getElementById('channels-grid'),ce=document.getElementById('ch-count');if(ce)ce.textContent=r.length+' results';if(!r.length){if(g)g.innerHTML='<div style="text-align:center;padding:40px;color:var(--muted)">No results</div>';return;}var h='';for(var i=0;i<r.length;i++){var ch=r[i],ci=CAT_ICON[ch.c]||'fa-tv';var sl=scoreLabel(ch.id),sc=getScore(ch.id);var scoreHtml=sl==='new'?'':sl==='stable'?'<span class="ch-score stable"><i class="fas fa-check-circle" style="font-size:7px"></i> '+Math.round(sc.ok/(sc.ok+sc.fail)*100)+'%</span>':sl==='unstable'?'<span class="ch-score unstable"><i class="fas fa-exclamation-circle" style="font-size:7px"></i> '+Math.round(sc.ok/(sc.ok+sc.fail)*100)+'%</span>':'';h+='<div class="ch-card visible" data-id="'+ch.id+'"><div class="ch-thumb"><div class="ch-thumb-img" style="'+cardBgStyle(ch)+'"></div><div class="ch-mini-preview" style="background:linear-gradient(45deg,'+ch.clr+'22,'+ch.clr+'44,'+ch.clr+'22)"></div><div class="ch-thumb-overlay"></div>'+logoImg(ch,'ch-logo')+logoFB(ch,'ch-logo-fb')+'<div class="ch-thumb-label">'+esc(ch.n)+'</div><div class="ch-thumb-src">'+esc(ch.src)+'</div><span class="live-badge">LIVE</span>'+scoreHtml+'<span class="ch-viewers"><i class="fas fa-eye"></i> '+fmtV(ch.v)+'</span><span class="ch-cat-tag">'+catLabel(ch.c)+'</span><div class="ch-play"><i class="fas fa-play"></i></div></div><div class="ch-body"><div class="ch-name">'+esc(ch.n)+'</div><div class="ch-desc">'+esc(ch.d)+'</div></div></div>';}if(g)g.innerHTML=h;setTimeout(fixLogos,100);}
+function doSearch(q){q=q.toLowerCase().trim();if(!q){curFilter='all';renderGrid();setupLazyLoad();renderCats();return;}var r=CHANNELS.filter(function(ch){return ch.n.toLowerCase().indexOf(q)>=0||ch.c.indexOf(q)>=0||ch.src.toLowerCase().indexOf(q)>=0||ch.d.toLowerCase().indexOf(q)>=0;});var g=document.getElementById('channels-grid'),ce=document.getElementById('ch-count');if(ce)ce.textContent=r.length+' results';if(!r.length){if(g)g.innerHTML='<div style="text-align:center;padding:40px;color:var(--muted)">No results</div>';return;}var h='';for(var i=0;i<r.length;i++){var ch=r[i],ci=CAT_ICON[ch.c]||'fa-tv';var sl=scoreLabel(ch.id),sc=getScore(ch.id);var scoreHtml=sl==='new'?'':sl==='stable'?'<span class="ch-score stable"><i class="fas fa-check-circle" style="font-size:7px"></i> '+Math.round(sc.ok/(sc.ok+sc.fail)*100)+'%</span>':sl==='unstable'?'<span class="ch-score unstable"><i class="fas fa-exclamation-circle" style="font-size:7px"></i> '+Math.round(sc.ok/(sc.ok+sc.fail)*100)+'%</span>':'';h+='<div class="ch-card visible" data-id="'+ch.id+'"><div class="ch-thumb"><div class="ch-thumb-img" style="'+cardBgStyle(ch)+'"></div><div class="ch-mini-preview" style="background:linear-gradient(45deg,'+ch.clr+'22,'+ch.clr+'44,'+ch.clr+'22)"></div><div class="ch-thumb-overlay"></div><i class="fas '+ci+' ch-thumb-icon"></i>'+logoImg(ch,'ch-logo')+logoFB(ch,'ch-logo-fb')+'<div class="ch-thumb-label">'+esc(ch.n)+'</div><span class="live-badge">LIVE</span>'+scoreHtml+'<span class="ch-viewers"><i class="fas fa-eye"></i> '+fmtV(ch.v)+'</span><span class="ch-cat-tag">'+catLabel(ch.c)+'</span><div class="ch-play"><i class="fas fa-play"></i></div></div><div class="ch-body"><div class="ch-name">'+esc(ch.n)+'</div><div class="ch-desc">'+esc(ch.d)+'</div></div></div>';}if(g)g.innerHTML=h;setTimeout(fixLogos,100);}
 
 function updateStats(){var c=document.getElementById('stat-ch'),h=document.getElementById('stat-hd');if(c)c.textContent=CHANNELS.length;if(h)h.textContent=CHANNELS.filter(function(ch){return ch.q==='1080p';}).length;}
 
