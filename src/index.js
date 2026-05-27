@@ -82,13 +82,277 @@ export default {
     }
 
     // CORS preflight for all API routes
-    if ((url.pathname === '/api/ai' || url.pathname === '/proxy') && request.method === 'OPTIONS') {
+    if ((url.pathname.startsWith('/api/') || url.pathname === '/proxy') && request.method === 'OPTIONS') {
       return new Response(null, {
         headers: {
           'Access-Control-Allow-Origin': '*',
           'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
           'Access-Control-Allow-Headers': 'Content-Type'
         }
+      });
+    }
+
+    // ============================================================
+    // EDGE MVP ENGINE - Content Detection System
+    // Ported from Python MVP - Production Ready
+    // ============================================================
+
+    const EDGE_CONFIG = {
+      CHANNEL_PRIORITY: {
+        sports: { interval: 15, vision: true },
+        movies: { interval: 30, vision: true },
+        series: { interval: 45, vision: false },
+        news: { interval: 120, vision: false },
+        music: { interval: 90, vision: false },
+        default: { interval: 60, vision: false }
+      },
+      CONFIDENCE: {
+        poster: 0.75,
+        now_playing: 0.85,
+        vision_accept: 0.70,
+        epg_accept: 0.85,
+        metadata_accept: 0.90
+      },
+      CACHE_TTL: { poster: 86400, detection: 3600, epg: 300 },
+      DAILY_BUDGET: 5.0,
+      PROVIDER_COSTS: { vision: 0.0025, ocr: 0.0005 },
+      TMDB_API_URL: 'https://api.themoviedb.org/3',
+      VISION_TIMEOUT: 10000
+    };
+
+    // Simple in-memory caches (per-isolate, persists across requests)
+    const detectionCache = new Map();
+    const posterCache = new Map();
+    let costState = { spent: 0, visionCount: 0, lastReset: new Date().toDateString() };
+
+    function resetCostIfNeeded() {
+      const today = new Date().toDateString();
+      if (today !== costState.lastReset) {
+        costState = { spent: 0, visionCount: 0, lastReset: today };
+      }
+    }
+
+    function canUseVision() {
+      resetCostIfNeeded();
+      return costState.spent + EDGE_CONFIG.PROVIDER_COSTS.vision <= EDGE_CONFIG.DAILY_BUDGET;
+    }
+
+    function recordVision() {
+      resetCostIfNeeded();
+      costState.spent += EDGE_CONFIG.PROVIDER_COSTS.vision;
+      costState.visionCount++;
+    }
+
+    function getCacheKey(prefix, ...parts) {
+      return prefix + ':' + parts.join(':');
+    }
+
+    function getFromCache(map, key, ttlMs) {
+      const entry = map.get(key);
+      if (!entry) return null;
+      if (Date.now() - entry.ts > ttlMs) { map.delete(key); return null; }
+      return entry.data;
+    }
+
+    function setCache(map, key, data, maxSize = 2000) {
+      if (map.size >= maxSize) {
+        const firstKey = map.keys().next().value;
+        map.delete(firstKey);
+      }
+      map.set(key, { data, ts: Date.now() });
+    }
+
+    function inferContentType(text) {
+      const t = (text || '').toLowerCase();
+      if (['movie','film','pelicula','cine','adrenalina','comedia','terror','horror','romance','drama','thriller','western','crime','classic','premiere','action'].some(k => t.includes(k))) return 'movie';
+      if (['series','episode','temporada','capitulo'].some(k => t.includes(k))) return 'series';
+      if (['sports','deporte','futbol','live','en vivo','directo'].some(k => t.includes(k))) return 'sports';
+      return 'unknown';
+    }
+
+    // TMDB Poster Engine
+    async function getPosterFromTMDB(title, contentType, year) {
+      const cacheKey = getCacheKey('poster', title, year || '', contentType);
+      const cached = getFromCache(posterCache, cacheKey, EDGE_CONFIG.CACHE_TTL.poster * 1000);
+      if (cached) return cached;
+
+      const tmdbKey = env.TMDB_API_KEY || '';
+      if (!tmdbKey) return null;
+
+      const endpoint = contentType === 'movie' ? 'search/movie' : 'search/tv';
+      const params = new URLSearchParams({ api_key: tmdbKey, query: title, language: 'es' });
+      if (year) params.append(contentType === 'movie' ? 'year' : 'first_air_date_year', year);
+
+      try {
+        const resp = await fetch(`${EDGE_CONFIG.TMDB_API_URL}/${endpoint}?${params}`, {
+          signal: AbortSignal.timeout(8000)
+        });
+        const data = await resp.json();
+        if (data.results && data.results.length > 0) {
+          const posterPath = data.results[0].poster_path;
+          if (posterPath) {
+            const url = `https://image.tmdb.org/t/p/w500${posterPath}`;
+            setCache(posterCache, cacheKey, url);
+            return url;
+          }
+        }
+      } catch (e) { /* TMDB fail is non-critical */ }
+      return null;
+    }
+
+    // Vision-based detection using Mistral Pixtral
+    async function detectFromVision(frameB64, mistralKey) {
+      if (!mistralKey) return null;
+      try {
+        const resp = await fetch('https://api.mistral.ai/v1/chat/completions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${mistralKey}` },
+          signal: AbortSignal.timeout(EDGE_CONFIG.VISION_TIMEOUT),
+          body: JSON.stringify({
+            model: 'pixtral-12b-2409',
+            messages: [{
+              role: 'user',
+              content: [
+                { type: 'text', text: 'Eres un identificador de contenido para TV IPTV. Analiza esta imagen y responde SOLO con JSON: {"title":"titulo exacto","type":"movie|series|sports|unknown","confidence":0.0-1.0}. Si no reconoces, confidence=0.' },
+                { type: 'image_url', image_url: `data:image/jpeg;base64,${frameB64}` }
+              ]
+            }],
+            temperature: 0.2,
+            max_tokens: 100
+          })
+        });
+        const data = await resp.json();
+        const content = data.choices?.[0]?.message?.content || '';
+        const jsonMatch = content.match(/\{[\s\S]*?\}/);
+        if (jsonMatch) {
+          const result = JSON.parse(jsonMatch[0]);
+          if (result.confidence >= EDGE_CONFIG.CONFIDENCE.vision_accept) {
+            return result;
+          }
+        }
+      } catch (e) { /* Vision fail is non-critical */ }
+      return null;
+    }
+
+    // Metadata-based detection
+    function detectFromMetadata(metadata) {
+      const title = metadata?.title;
+      if (!title || title.length < 2) return null;
+      return {
+        title,
+        type: inferContentType(title + ' ' + (metadata.genre || []).join(' ')),
+        confidence: EDGE_CONFIG.CONFIDENCE.metadata_accept,
+        genre: metadata.genre || [],
+        year: metadata.year || null
+      };
+    }
+
+    // Full analysis pipeline
+    async function analyzeChannel(channelId, category, frameB64, metadata) {
+      const priority = EDGE_CONFIG.CHANNEL_PRIORITY[category] || EDGE_CONFIG.CHANNEL_PRIORITY.default;
+      const now = Date.now();
+
+      // Rate limiting per channel
+      const cacheKey = getCacheKey('detect', channelId);
+      const lastDetection = getFromCache(detectionCache, cacheKey, priority.interval * 1000);
+      if (lastDetection) return lastDetection;
+
+      let detection = null;
+
+      // 1. Metadata (fastest, free)
+      if (!detection && metadata) {
+        detection = detectFromMetadata(metadata);
+      }
+
+      // 2. Vision (costly, but accurate for movies/sports)
+      if (!detection && frameB64 && priority.vision && canUseVision()) {
+        const mistralKey = env.MISTRAL_API || env.MISTRAL_API_KEY || '';
+        const visionResult = await detectFromVision(frameB64, mistralKey);
+        if (visionResult) {
+          recordVision();
+          detection = visionResult;
+        }
+      }
+
+      // 3. Fetch poster if we have a detection
+      if (detection && detection.confidence >= EDGE_CONFIG.CONFIDENCE.poster) {
+        const posterUrl = await getPosterFromTMDB(detection.title, detection.type || 'movie', detection.year);
+        if (posterUrl) detection.poster = posterUrl;
+      }
+
+      // Cache result
+      if (detection) {
+        detection.timestamp = now;
+        detection.channelId = channelId;
+        setCache(detectionCache, cacheKey, detection);
+      }
+
+      return detection;
+    }
+
+    // ============================================================
+    // API: Content Detection
+    // ============================================================
+    if (url.pathname === '/api/detect' && request.method === 'POST') {
+      try {
+        const body = await request.json();
+        const { channelId, category, frame, metadata } = body;
+        if (!channelId) {
+          return new Response(JSON.stringify({ error: 'channelId required' }), {
+            status: 400, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+          });
+        }
+        const result = await analyzeChannel(channelId, category || 'default', frame, metadata);
+        return new Response(JSON.stringify(result), {
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-cache' }
+        });
+      } catch (e) {
+        return new Response(JSON.stringify({ error: e.message }), {
+          status: 500, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        });
+      }
+    }
+
+    // API: Get cached detection for a channel
+    if (url.pathname === '/api/now-playing' && request.method === 'GET') {
+      const channelId = url.searchParams.get('channelId');
+      if (!channelId) {
+        return new Response(JSON.stringify({ error: 'channelId required' }), {
+          status: 400, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        });
+      }
+      const cacheKey = getCacheKey('detect', channelId);
+      const result = getFromCache(detectionCache, cacheKey, EDGE_CONFIG.CACHE_TTL.detection * 1000);
+      return new Response(JSON.stringify(result), {
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-cache' }
+      });
+    }
+
+    // API: TMDB Poster lookup
+    if (url.pathname === '/api/poster' && request.method === 'GET') {
+      const title = url.searchParams.get('title');
+      const type = url.searchParams.get('type') || 'movie';
+      const year = url.searchParams.get('year') || null;
+      if (!title) {
+        return new Response(JSON.stringify({ error: 'title required' }), {
+          status: 400, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        });
+      }
+      const poster = await getPosterFromTMDB(title, type, year);
+      return new Response(JSON.stringify({ title, poster }), {
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'public, max-age=86400' }
+      });
+    }
+
+    // API: Cost status
+    if (url.pathname === '/api/cost-status' && request.method === 'GET') {
+      resetCostIfNeeded();
+      return new Response(JSON.stringify({
+        remaining: Math.max(0, EDGE_CONFIG.DAILY_BUDGET - costState.spent).toFixed(2),
+        visionCalls: costState.visionCount,
+        budget: EDGE_CONFIG.DAILY_BUDGET
+      }), {
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
       });
     }
 
@@ -248,6 +512,18 @@ header nav a.active::after{content:'';position:absolute;bottom:-2px;left:0;width
 .ch-card .ch-body{padding:12px 14px}
 .ch-card .ch-name{font-family:var(--font-body);font-weight:600;font-size:13px;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ch-card .ch-desc{color:var(--muted);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ch-card .ch-now-playing{display:flex;align-items:center;gap:6px;margin-top:4px;padding:4px 8px;background:rgba(232,17,45,0.08);border:1px solid rgba(232,17,45,0.15);border-radius:4px;overflow:hidden}
+.ch-card .ch-now-playing .np-dot{width:6px;height:6px;border-radius:50%;background:var(--red);flex-shrink:0;animation:dotPulse 1.5s infinite}
+.ch-card .ch-now-playing .np-title{font-size:10px;color:var(--gray);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
+.ch-card .ch-now-playing .np-type{font-size:8px;padding:1px 5px;border-radius:3px;background:rgba(255,255,255,0.06);color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;flex-shrink:0}
+.ch-card .ch-now-playing .np-poster{width:20px;height:28px;border-radius:2px;object-fit:cover;flex-shrink:0}
+.player-now-playing{display:flex;align-items:center;gap:12px;padding:8px 16px;background:var(--elevated);border-top:1px solid rgba(255,255,255,0.06)}
+.player-now-playing .pnp-poster{width:40px;height:56px;border-radius:4px;object-fit:cover;flex-shrink:0;border:1px solid rgba(255,255,255,0.1)}
+.player-now-playing .pnp-info{flex:1;min-width:0}
+.player-now-playing .pnp-title{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.player-now-playing .pnp-meta{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:8px;margin-top:2px}
+.player-now-playing .pnp-meta .pnp-type{font-size:9px;padding:1px 6px;border-radius:3px;background:rgba(232,17,45,0.15);color:var(--red);text-transform:uppercase;letter-spacing:0.5px}
+.player-now-playing .pnp-confidence{font-size:10px;color:var(--muted)}
 @keyframes livePulse{0%,100%{opacity:1}50%{opacity:0.7}}
 @keyframes dotPulse{0%,100%{opacity:1}50%{opacity:0.3}}
 
@@ -386,7 +662,7 @@ footer .f-stats .stat strong{color:var(--white);font-family:var(--font-display)}
 <div id="search-box"><input type="text" id="search-input" placeholder="Buscar canales..."></div>
 <section class="hero" id="hero-section"><div id="hero-slides"></div><div class="hero-arrows"><button id="hero-prev"><i class="fas fa-chevron-left"></i></button><button id="hero-next"><i class="fas fa-chevron-right"></i></button><div class="hero-dots" id="hero-dots"></div></section>
 <div class="main-layout"><main class="main-content"><section id="continue-section" style="display:none"><h2 class="section-title"><span class="st-bar"></span>Continue Watching<span class="st-badge" id="cw-count">0</span></h2><div class="cw-scroll" id="cw-scroll"></div></section><section id="channels-section"><h2 class="section-title"><span class="st-bar"></span>Canales en Vivo<span class="st-count" id="ch-count"></span></h2><div class="cat-filter" id="cat-filter"></div><div class="channels-grid" id="channels-grid"></div></section><section id="upcoming-section" style="margin-top:40px"><h2 class="section-title"><span class="st-bar"></span>Coming Up</h2><div class="upcoming-scroll" id="upcoming-scroll"></div></section></main><aside class="sidebar"><div class="sidebar-section"><div class="sidebar-toggle" id="on-air-toggle"><h3><i class="fas fa-broadcast-tower"></i>En Vivo Ahora</h3><i class="fas fa-chevron-down chevron"></i></div><div class="sidebar-body" id="on-air-body"></div></div><div class="sidebar-section"><div class="sidebar-toggle" id="trending-toggle"><h3><i class="fas fa-fire"></i>Tendencias</h3><i class="fas fa-chevron-down chevron"></i></div><div class="sidebar-body" id="trending-body"></div></div><div class="sidebar-section"><div class="sidebar-toggle" id="mistral-toggle"><h3><i class="fas fa-robot"></i>Asistente IA</h3><i class="fas fa-chevron-down chevron"></i></div><div class="sidebar-body" id="mistral-body"><div class="mp-chat"><div class="mp-msg" id="mistral-msg">Preguntame sobre canales!</div><div class="mp-input-wrap"><input class="mp-input" id="mistral-input" placeholder="Pregunta sobre canales..."><button class="mp-send" id="mistral-send"><i class="fas fa-paper-plane"></i></button></div></div></div></div></aside></div>
-<div id="player-modal"><div class="player-wrap"><button class="player-close" id="player-close"><i class="fas fa-times"></i></button><video id="hls-video" muted playsinline></video><div class="player-spinner" id="player-spinner"><div class="spinner-ring"></div></div><div class="buffering-overlay" id="buffering-overlay"><div class="buffer-pulse"></div></div><div class="offline-overlay" id="offline-overlay"><i class="fas fa-signal off-icon"></i><div class="off-text">CANAL OFFLINE</div><div class="off-hint">Este canal puede estar bloqueado. Prueba otro o usa VPN.</div><button class="btn-retry" id="btn-retry"><i class="fas fa-redo"></i> Reintentar</button><button class="btn-switch" id="btn-switch"><i class="fas fa-exchange-alt"></i> Siguiente Canal</button></div><div class="player-bar"><button id="play-pause"><i class="fas fa-play"></i></button><button id="vol-btn"><i class="fas fa-volume-mute"></i></button><input type="range" id="vol-slider" min="0" max="100" value="0" class="vol-slider"><span class="p-title" id="player-title">-</span><span class="p-quality" id="quality-indicator">HD</span><span class="p-status connecting" id="player-status">CONNECTING</span><button id="audio-btn"><i class="fas fa-headphones"></i></button><button id="fullscreen-btn"><i class="fas fa-expand"></i></button></div></div></div>
+<div id="player-modal"><div class="player-wrap"><button class="player-close" id="player-close"><i class="fas fa-times"></i></button><video id="hls-video" muted playsinline></video><div class="player-spinner" id="player-spinner"><div class="spinner-ring"></div></div><div class="buffering-overlay" id="buffering-overlay"><div class="buffer-pulse"></div></div><div class="offline-overlay" id="offline-overlay"><i class="fas fa-signal off-icon"></i><div class="off-text">CANAL OFFLINE</div><div class="off-hint">Este canal puede estar bloqueado. Prueba otro o usa VPN.</div><button class="btn-retry" id="btn-retry"><i class="fas fa-redo"></i> Reintentar</button><button class="btn-switch" id="btn-switch"><i class="fas fa-exchange-alt"></i> Siguiente Canal</button></div><div class="player-now-playing" id="player-now-playing" style="display:none"><img class="pnp-poster" id="pnp-poster" src="" alt=""><div class="pnp-info"><div class="pnp-title" id="pnp-title">-</div><div class="pnp-meta"><span class="pnp-type" id="pnp-type">-</span><span class="pnp-confidence" id="pnp-confidence"></span></div></div></div><div class="player-bar"><button id="play-pause"><i class="fas fa-play"></i></button><button id="vol-btn"><i class="fas fa-volume-mute"></i></button><input type="range" id="vol-slider" min="0" max="100" value="0" class="vol-slider"><span class="p-title" id="player-title">-</span><span class="p-quality" id="quality-indicator">HD</span><span class="p-status connecting" id="player-status">CONNECTING</span><button id="detect-btn" title="Detect content"><i class="fas fa-magic"></i></button><button id="audio-btn"><i class="fas fa-headphones"></i></button><button id="fullscreen-btn"><i class="fas fa-expand"></i></button></div></div></div>
 <div class="toast" id="toast"></div>
 <footer><div class="f-brand">EDGE <span>v7.0</span> &mdash; IPTV 100% Gratis</div><div class="f-stats"><div class="stat"><strong id="stat-ch">211</strong> canales</div><div class="stat"><strong id="stat-hd">211</strong> HD</div><div class="stat"><strong>5</strong> categorias</div></div></footer>
 <script>
@@ -1045,6 +1321,178 @@ function bindAll(){
 }
 
 try{initApp();}catch(e){console.error('BOOT:',e);killSplash();}
+})();
+
+// ============================================================
+// EDGE MVP ENGINE - Frontend Detection System
+// ============================================================
+(function(){
+'use strict';
+
+var nowPlayingData={};
+var detectInterval=null;
+var currentChannel=null;
+
+function captureFrame(video,quality){
+  if(!video||!video.videoWidth)return null;
+  try{
+    var c=document.createElement('canvas');
+    var scale=0.25;
+    c.width=Math.max(1,Math.floor(video.videoWidth*scale));
+    c.height=Math.max(1,Math.floor(video.videoHeight*scale));
+    var ctx=c.getContext('2d');
+    ctx.drawImage(video,0,0,c.width,c.height);
+    return c.toDataURL('image/jpeg',quality||0.5).split(',')[1];
+  }catch(e){return null;}
+}
+
+async function detectChannel(ch){
+  if(!ch)return;
+  var video=document.getElementById('hls-video');
+  var frame=captureFrame(video,0.4);
+  var body={channelId:String(ch.id),category:ch.c||'default'};
+  if(frame)body.frame=frame;
+  body.metadata={title:ch.n,genre:[catLabel(ch.c)]};
+
+  try{
+    var resp=await fetch('/api/detect',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(body)
+    });
+    var data=await resp.json();
+    if(data&&data.title){
+      nowPlayingData[ch.id]=data;
+      updateNowPlayingUI(ch.id,data);
+    }
+    return data;
+  }catch(e){console.warn('Detect error:',e);}
+  return null;
+}
+
+function updateNowPlayingUI(channelId,data){
+  // Update channel card if visible
+  var card=document.querySelector('.ch-card[data-id="'+channelId+'"]');
+  if(card){
+    var existing=card.querySelector('.ch-now-playing');
+    if(existing)existing.remove();
+    var np=document.createElement('div');
+    np.className='ch-now-playing';
+    var html='<span class="np-dot"></span>';
+    if(data.poster)html+='<img class="np-poster" src="'+data.poster+'" alt="" loading="lazy">';
+    html+='<span class="np-title">'+esc(data.title)+'</span>';
+    if(data.type&&data.type!=='unknown')html+='<span class="np-type">'+data.type+'</span>';
+    np.innerHTML=html;
+    var body=card.querySelector('.ch-body');
+    if(body)body.appendChild(np);
+  }
+
+  // Update player now-playing
+  var pnp=document.getElementById('player-now-playing');
+  if(pnp&&currentChannel&&currentChannel.id==channelId){
+    pnp.style.display='flex';
+    var poster=document.getElementById('pnp-poster');
+    var title=document.getElementById('pnp-title');
+    var type=document.getElementById('pnp-type');
+    var conf=document.getElementById('pnp-confidence');
+    if(poster){
+      if(data.poster){poster.src=data.poster;poster.style.display='block';}
+      else{poster.style.display='none';}
+    }
+    if(title)title.textContent=data.title||'-';
+    if(type)type.textContent=(data.type||'unknown').toUpperCase();
+    if(conf)conf.textContent=data.confidence?Math.round(data.confidence*100)+'% match':'';
+  }
+}
+
+async function autoDetect(){
+  if(!currentChannel)return;
+  await detectChannel(currentChannel);
+}
+
+// Hook into player open
+var origOpenPlayer=window.openPlayer;
+window.openPlayer=function(ch){
+  currentChannel=ch;
+  if(origOpenPlayer)origOpenPlayer(ch);
+
+  // Clear previous
+  var pnp=document.getElementById('player-now-playing');
+  if(pnp)pnp.style.display='none';
+
+  // Start auto-detection after stream loads
+  if(detectInterval)clearInterval(detectInterval);
+  setTimeout(function(){autoDetect();},8000);
+  detectInterval=setInterval(function(){autoDetect();},30000);
+};
+
+// Hook into player close
+var origClosePlayer=window.closePlayer;
+window.closePlayer=function(){
+  currentChannel=null;
+  if(detectInterval){clearInterval(detectInterval);detectInterval=null;}
+  var pnp=document.getElementById('player-now-playing');
+  if(pnp)pnp.style.display='none';
+  if(origClosePlayer)origClosePlayer();
+};
+
+// Manual detect button
+document.addEventListener('DOMContentLoaded',function(){
+  var db=document.getElementById('detect-btn');
+  if(db)db.addEventListener('click',function(){
+    if(currentChannel){
+      showToast('Detectando contenido...');
+      detectChannel(currentChannel).then(function(d){
+        if(d&&d.title)showToast('Detectado: '+d.title);
+        else showToast('No se pudo detectar el contenido');
+      });
+    }
+  });
+});
+
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function catLabel(c){var cats=[{id:'movies',label:'Peliculas'},{id:'francais',label:'Francais'},{id:'kids',label:'Ninos'},{id:'music',label:'Musica'},{id:'news',label:'Noticias'}];for(var i=0;i<cats.length;i++){if(cats[i].id===c)return cats[i].label;}return c;}
+
+function showToast(msg){
+  var t=document.getElementById('toast');
+  if(!t)return;
+  t.textContent=msg;
+  t.classList.add('show');
+  setTimeout(function(){t.classList.remove('show');},3000);
+}
+
+// Load now-playing for visible channel cards on scroll
+var npObserver=new IntersectionObserver(function(entries){
+  entries.forEach(function(entry){
+    if(entry.isIntersecting){
+      var card=entry.target;
+      var id=parseInt(card.getAttribute('data-id'));
+      if(id&&!nowPlayingData[id]){
+        var ch=CHANNELS.find(function(x){return x.id===id;});
+        if(ch){
+          // Lightweight metadata-only detection for grid
+          fetch('/api/now-playing?channelId='+id).then(function(r){return r.json();}).then(function(d){
+            if(d&&d.title){
+              nowPlayingData[id]=d;
+              updateNowPlayingUI(id,d);
+            }
+          }).catch(function(){});
+        }
+      }
+    }
+  });
+},{rootMargin:'200px'});
+
+// Observe cards after render
+var origRenderGrid=window.renderGrid;
+window.renderGrid=function(){
+  if(origRenderGrid)origRenderGrid();
+  setTimeout(function(){
+    var cards=document.querySelectorAll('.ch-card[data-id]');
+    for(var i=0;i<cards.length;i++){npObserver.observe(cards[i]);}
+  },200);
+};
+
 })();
 <\/script>
 </body>
