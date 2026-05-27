@@ -1975,8 +1975,10 @@ function askMistral(q,ctx){
   var category=curCh?curCh.c:'default';
   var channelId=curCh?curCh.id:null;
 
-  // Try Python Vision Engine first (has FFmpeg, PaddleOCR, OpenCLIP)
-  if(ENGINE_AVAILABLE||!ENGINE_AVAILABLE){
+  // Try Python Vision Engine first (has FFmpeg, pHash, Mistral Vision)
+  var tryEngine=ENGINE_AVAILABLE!==false;
+  if(ENGINE_AVAILABLE===false&&(Date.now()-ENGINE_CHECK_TIME>60000))tryEngine=true;
+  if(tryEngine){
     try{
       var engineBody={question:q,channelName:channelName,category:category,channelId:channelId};
       if(frame)engineBody.frame=frame;
@@ -1984,7 +1986,7 @@ function askMistral(q,ctx){
         method:'POST',
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify(engineBody),
-        signal:AbortSignal.timeout(15000)
+        signal:AbortSignal.timeout(8000) // Reduced from 15s to 8s
       });
       if(engineResp.ok){
         var engineData=await engineResp.json();
@@ -2111,15 +2113,17 @@ try{initApp();}catch(e){console.error('BOOT:',e);killSplash();}
 })();
 
 // ============================================================
-// EDGE MVP ENGINE v4 - Frontend Detection System
-// Pipeline: Scene Change → OCR → CLIP → Vision → TMDB
-// Supports Python Vision Engine (localhost:8900) + Cloudflare Worker fallback
+// EDGE Vision Engine v5 - Autonomous Metadata Worker
+// Pipeline: Stream → FFmpeg → pHash → Mistral Vision → TMDB → DB
+// Engine runs at localhost:8900 — autonomous, silent, not a chatbot
+// Falls back to Cloudflare Worker when engine unavailable
 // ============================================================
 (function(){
 'use strict';
 
 var ENGINE_URL='http://localhost:8900'; // Python Vision Engine
-var ENGINE_AVAILABLE=false; // Auto-detected on first call
+var ENGINE_AVAILABLE=null; // null=unknown, true=available, false=unavailable
+var ENGINE_CHECK_TIME=0; // Last engine availability check timestamp
 var nowPlayingData={};
 var detectInterval=null;
 var currentChannel=null;
@@ -2179,28 +2183,76 @@ async function detectChannel(ch,force){
   if(frame)body.frame=frame;
   body.metadata={title:ch.n,genre:[catLabel(ch.c)]};
 
-  // Try Python Vision Engine first (has FFmpeg, PaddleOCR, OpenCLIP)
-  if(ENGINE_AVAILABLE||!ENGINE_AVAILABLE){
+  // Try Python Vision Engine first (has FFmpeg, pHash, Mistral Vision)
+  // Only attempt if engine is known available or not yet checked
+  var tryEngine=ENGINE_AVAILABLE!==false;
+  // Re-check engine availability every 60 seconds
+  if(ENGINE_AVAILABLE===false&&(Date.now()-ENGINE_CHECK_TIME>60000)){
+    tryEngine=true;
+  }
+  if(tryEngine){
     try{
-      var engineResp=await fetch(ENGINE_URL+'/api/detect',{
-        method:'POST',
+      var engineResp=await fetch(ENGINE_URL+'/api/channel/'+String(ch.id),{
+        method:'GET',
         headers:{'Content-Type':'application/json'},
-        body:JSON.stringify(body),
-        signal:AbortSignal.timeout(8000)
+        signal:AbortSignal.timeout(2000) // Fast check - 2s timeout
       });
       if(engineResp.ok){
         var engineData=await engineResp.json();
-        if(engineData&&engineData.success&&engineData.data&&engineData.data.title){
-          ENGINE_AVAILABLE=true;
-          nowPlayingData[ch.id]=engineData.data;
+        ENGINE_AVAILABLE=true;
+        ENGINE_CHECK_TIME=Date.now();
+        // Engine has metadata for this channel
+        if(engineData&&engineData.success&&engineData.data&&engineData.data.currentTitle){
+          var data={
+            title:engineData.data.currentTitle,
+            type:engineData.data.currentType||'unknown',
+            year:engineData.data.currentYear,
+            poster:engineData.data.currentPoster,
+            backdrop:engineData.data.currentBackdrop,
+            overview:engineData.data.currentOverview,
+            rating:engineData.data.currentRating,
+            confidence:engineData.data.confidence||0,
+            source:engineData.data.source||'engine',
+            tmdb_id:engineData.data.currentTmdbId
+          };
+          nowPlayingData[ch.id]=data;
           detectionStats.total++;
-          if(engineData.data.source)detectionStats.bySource[engineData.data.source]=(detectionStats.bySource[engineData.data.source]||0)+1;
-          updateNowPlayingUI(ch.id,engineData.data);
-          return engineData.data;
+          if(data.source)detectionStats.bySource[data.source]=(detectionStats.bySource[data.source]||0)+1;
+          updateNowPlayingUI(ch.id,data);
+          return data;
+        }
+        // No metadata yet - trigger detection via engine
+        var detectResp=await fetch(ENGINE_URL+'/api/detect',{
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify(body),
+          signal:AbortSignal.timeout(8000)
+        });
+        if(detectResp.ok){
+          var detData=await detectResp.json();
+          if(detData&&detData.success&&detData.data&&detData.data.currentTitle){
+            var rd={
+              title:detData.data.currentTitle,
+              type:detData.data.currentType||'unknown',
+              year:detData.data.currentYear,
+              poster:detData.data.currentPoster,
+              backdrop:detData.data.currentBackdrop,
+              overview:detData.data.currentOverview,
+              rating:detData.data.currentRating,
+              confidence:detData.data.confidence||0,
+              source:detData.data.source||'engine',
+              tmdb_id:detData.data.currentTmdbId
+            };
+            nowPlayingData[ch.id]=rd;
+            detectionStats.total++;
+            updateNowPlayingUI(ch.id,rd);
+            return rd;
+          }
         }
       }
     }catch(e){
-      ENGINE_AVAILABLE=false; // Engine not reachable, fall back
+      ENGINE_AVAILABLE=false;
+      ENGINE_CHECK_TIME=Date.now();
     }
   }
 
@@ -2314,6 +2366,24 @@ window.openPlayer=function(ch){
   var backdropEl=document.getElementById('pnp-backdrop');
   if(backdropEl)backdropEl.style.display='none';
 
+  // Notify autonomous engine that user entered this channel
+  if(ENGINE_AVAILABLE!==false){
+    var proxyUrl=location.origin+'/proxy?url='+encodeURIComponent(ch.s);
+    fetch(ENGINE_URL+'/api/channel/activate',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        channelId:String(ch.id),
+        channelName:ch.n||'',
+        category:ch.c||'default',
+        streamUrl:proxyUrl
+      }),
+      signal:AbortSignal.timeout(2000)
+    }).then(function(r){
+      if(r.ok)ENGINE_AVAILABLE=true;
+    }).catch(function(){ENGINE_AVAILABLE=false;ENGINE_CHECK_TIME=Date.now();});
+  }
+
   // Start auto-detection with channel-specific interval
   if(detectInterval)clearInterval(detectInterval);
   setTimeout(function(){autoDetect();},6000);
@@ -2323,6 +2393,15 @@ window.openPlayer=function(ch){
 // Hook into player close
 var origClosePlayer=window.closePlayer;
 window.closePlayer=function(){
+  // Notify autonomous engine that user left the channel
+  if(currentChannel&&ENGINE_AVAILABLE!==false){
+    fetch(ENGINE_URL+'/api/channel/deactivate',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({channelId:String(currentChannel.id)}),
+      signal:AbortSignal.timeout(2000)
+    }).catch(function(){});
+  }
   currentChannel=null;
   lastFrameHash=null;
   if(detectInterval){clearInterval(detectInterval);detectInterval=null;}

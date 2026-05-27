@@ -87,8 +87,8 @@ class CacheLayer:
         c = config
         self.poster = TTLCache(max_size=c.cache_max_size, default_ttl=c.cache_poster_ttl)
         self.detection = TTLCache(max_size=c.cache_max_size, default_ttl=c.cache_detection_ttl)
-        self.embedding = TTLCache(max_size=c.cache_max_size, default_ttl=c.cache_embedding_ttl)
-        self.ocr = TTLCache(max_size=c.cache_max_size, default_ttl=c.cache_ocr_ttl)
+        self.embedding = TTLCache(max_size=c.cache_max_size, default_ttl=c.cache_detection_ttl)
+        self.ocr = TTLCache(max_size=c.cache_max_size, default_ttl=c.cache_detection_ttl)
         self.genre = TTLCache(max_size=c.cache_max_size, default_ttl=c.cache_genre_ttl)
         self.phash = TTLCache(max_size=c.cache_max_size, default_ttl=c.cache_detection_ttl)
 

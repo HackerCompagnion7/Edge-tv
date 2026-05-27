@@ -1,4 +1,4 @@
-# EDGE Vision Engine - Production Dependencies
+# EDGE Vision Engine v5 - Autonomous Metadata Worker
 # Install: pip install -r requirements.txt
 
 # ── Core ───────────────────────────────────────────────────
@@ -16,14 +16,12 @@ Pillow>=10.2.0
 # ── Scene Change Detection (pHash) ─────────────────────────
 imagehash>=4.3.0
 
-# ── OCR (PaddleOCR) ────────────────────────────────────────
-paddleocr>=2.8.0
-paddlepaddle>=2.6.0
+# ── Database ───────────────────────────────────────────────
+# SQLite is built-in to Python, no pip install needed
+# For PostgreSQL (optional): psycopg2-binary>=2.9.0
 
-# ── Visual Embeddings (OpenCLIP) ──────────────────────────
-open_clip_torch>=1.10.0
-torch>=2.2.0
-torchvision>=0.17.0
+# ── Cloudinary (optional - poster storage) ─────────────────
+cloudinary>=1.40.0
 
 # ── Utilities ──────────────────────────────────────────────
 numpy>=1.26.0

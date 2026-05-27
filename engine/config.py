@@ -2,10 +2,11 @@
 
 Single source of truth for all engine parameters.
 No magic numbers. No scattered config.
+Autonomous metadata worker — not a chatbot.
 """
 
 from dataclasses import dataclass, field
-from typing import Dict, List
+from typing import Dict, List, Set
 import os
 
 
@@ -21,19 +22,8 @@ class EngineConfig:
 
     # ── Scene Change (pHash) ───────────────────────────────────
     phash_hash_size: int = 8                # hash size in bits
-    phash_threshold: int = 10               # hamming distance threshold
-    phash_high_threshold: int = 18          # force re-analyze above this
-
-    # ── OCR (PaddleOCR) ────────────────────────────────────────
-    ocr_lang: str = "es"                    # primary OCR language
-    ocr_confidence_min: float = 0.45        # minimum OCR confidence
-    ocr_use_angle_cls: bool = True          # detect rotated text
-
-    # ── Visual Embeddings (OpenCLIP) ───────────────────────────
-    clip_model: str = "ViT-B-32"            # model name
-    clip_pretrained: str = "laion2b_s34b_b79k"  # pretrained weights
-    clip_similarity_threshold: float = 0.82  # cosine similarity for match
-    clip_candidate_threshold: float = 0.70   # lower threshold for candidates
+    phash_threshold: int = 10               # hamming distance: scene changed
+    phash_high_threshold: int = 18          # hamming distance: force analysis
 
     # ── TMDB ───────────────────────────────────────────────────
     tmdb_api_key: str = ""
@@ -44,49 +34,59 @@ class EngineConfig:
     tmdb_poster_size: str = "w500"
     tmdb_backdrop_size: str = "w780"
 
+    # ── Mistral Vision ─────────────────────────────────────────
+    mistral_api_key: str = ""
+    mistral_model: str = "pixtral-12b-2409"
+    mistral_timeout: int = 20
+    mistral_confidence_min: float = 0.75    # reject detections below this
+
+    # ── Cloudinary ─────────────────────────────────────────────
+    cloudinary_cloud_name: str = ""
+    cloudinary_api_key: str = ""
+    cloudinary_api_secret: str = ""
+    cloudinary_folder: str = "edge-tv/posters"
+
+    # ── Database ───────────────────────────────────────────────
+    database_url: str = ""                  # PostgreSQL URL or empty for SQLite
+    database_path: str = "edge_metadata.db" # SQLite fallback path
+
     # ── Cache ──────────────────────────────────────────────────
     cache_poster_ttl: int = 86400           # 24h
     cache_detection_ttl: int = 3600         # 1h
-    cache_embedding_ttl: int = 1800         # 30min
-    cache_ocr_ttl: int = 600               # 10min
     cache_genre_ttl: int = 1800             # 30min
     cache_max_size: int = 2000              # max entries per cache
 
-    # ── Channel Scan Intervals (seconds) ───────────────────────
-    scan_intervals: Dict[str, int] = field(default_factory=lambda: {
-        "sports": 15,
-        "movies": 30,
-        "series": 45,
-        "news": 120,
-        "music": 90,
-        "kids": 60,
-        "francais": 60,
-        "default": 60,
+    # ── Autonomous Worker Intervals (seconds) ──────────────────
+    worker_intervals: Dict[str, int] = field(default_factory=lambda: {
+        "movie": 30,       # movie channels: check every 30s
+        "kids": 45,        # kids channels: check every 45s
+        "default": 60,     # everything else: 60s
+    })
+
+    # ── Categories that get dynamic detection ──────────────────
+    active_categories: Set[str] = field(default_factory=lambda: {
+        "movie", "kids",
+    })
+
+    # ── Categories to IGNORE (no detection) ────────────────────
+    ignore_categories: Set[str] = field(default_factory=lambda: {
+        "news", "sports", "music", "radio", "francais",
     })
 
     # ── Confidence Thresholds ──────────────────────────────────
-    confidence_metadata: float = 0.90
-    confidence_ocr: float = 0.65
-    confidence_clip: float = 0.80
-    confidence_vision: float = 0.70
-    confidence_epg: float = 0.50
     confidence_accept: float = 0.55         # minimum to update UI
     confidence_poster: float = 0.60         # minimum to fetch poster
 
     # ── Cost Governor ──────────────────────────────────────────
     daily_budget: float = 5.0               # USD
     cost_vision_call: float = 0.0025        # per vision API call
-    cost_ocr_call: float = 0.0005           # estimated OCR cost
 
     # ── Pipeline Control ───────────────────────────────────────
-    max_concurrent_frames: int = 3          # parallel frame processing
-    vision_queue_max: int = 20              # max queued vision calls
+    max_concurrent_workers: int = 3         # parallel channel monitors
     analysis_timeout: int = 25              # total analysis timeout
-
-    # ── Mistral Vision (optional, for high-confidence ID) ──────
-    mistral_api_key: str = ""
-    mistral_model: str = "pixtral-12b-2409"
-    mistral_timeout: int = 20
+    sleep_after_success: int = 180          # 3min sleep after successful ID
+    sleep_after_fail: int = 60              # 1min sleep after failed detection
+    max_retries: int = 3                    # max retries before giving up
 
     # ── Server ─────────────────────────────────────────────────
     host: str = "0.0.0.0"
@@ -100,6 +100,48 @@ class EngineConfig:
             tmdb_api_key=os.getenv("TMDB_API_KEY", ""),
             tmdb_access_token=os.getenv("TMDB_ACCESS_TOKEN", ""),
             mistral_api_key=os.getenv("MISTRAL_API_KEY", os.getenv("MISTRAL_API", "")),
+            cloudinary_cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME", ""),
+            cloudinary_api_key=os.getenv("CLOUDINARY_API_KEY", ""),
+            cloudinary_api_secret=os.getenv("CLOUDINARY_API_SECRET", ""),
+            cloudinary_folder=os.getenv("CLOUDINARY_FOLDER", "edge-tv/posters"),
+            database_url=os.getenv("DATABASE_URL", ""),
+            database_path=os.getenv("DATABASE_PATH", "edge_metadata.db"),
             host=os.getenv("ENGINE_HOST", "0.0.0.0"),
             port=int(os.getenv("ENGINE_PORT", "8900")),
         )
+
+    @property
+    def cloudinary_configured(self) -> bool:
+        return bool(self.cloudinary_cloud_name and self.cloudinary_api_key and self.cloudinary_api_secret)
+
+    @property
+    def tmdb_configured(self) -> bool:
+        return bool(self.tmdb_api_key or self.tmdb_access_token)
+
+    @property
+    def mistral_configured(self) -> bool:
+        return bool(self.mistral_api_key)
+
+    def is_category_active(self, category: str) -> bool:
+        """Check if a category should get dynamic detection."""
+        cat_lower = category.lower()
+        if cat_lower in self.ignore_categories:
+            return False
+        # Movie subcategories are also active
+        if cat_lower in ("movies", "movie", "cine", "terror", "horror",
+                         "action", "comedia", "thriller", "drama", "romance",
+                         "scifi", "western", "crime", "classic", "premiere"):
+            return True
+        if cat_lower in self.active_categories:
+            return True
+        return False
+
+    def get_worker_interval(self, category: str) -> int:
+        """Get monitoring interval for a category."""
+        cat_lower = category.lower()
+        if cat_lower in ("movies", "movie", "cine", "terror", "horror",
+                         "action", "comedia", "thriller", "drama"):
+            return self.worker_intervals.get("movie", 30)
+        if cat_lower in ("kids", "infantil", "cartoon"):
+            return self.worker_intervals.get("kids", 45)
+        return self.worker_intervals.get("default", 60)

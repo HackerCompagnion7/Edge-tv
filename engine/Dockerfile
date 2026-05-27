@@ -1,5 +1,5 @@
-# EDGE Vision Engine - Production Docker Image
-# Pipeline: FFmpeg → pHash → PaddleOCR → OpenCLIP → Fusion → TMDB
+# EDGE Vision Engine v5 - Autonomous Metadata Worker
+# Pipeline: FFmpeg → pHash → Mistral Vision → TMDB → Cloudinary → DB
 
 FROM python:3.12-slim
 
