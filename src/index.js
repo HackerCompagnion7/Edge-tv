@@ -113,10 +113,13 @@ header nav a.active::after{content:'';position:absolute;bottom:-2px;left:0;width
 .ch-card{background:var(--surface);border-radius:var(--radius-card);overflow:hidden;border:1px solid rgba(255,255,255,0.04);transition:transform 240ms ease,box-shadow 240ms ease,border-color 240ms ease;position:relative;cursor:pointer;opacity:0;transform:translateY(10px)}
 .ch-card.visible{opacity:1;transform:translateY(0);transition:opacity 300ms ease,transform 300ms ease,box-shadow 240ms ease,border-color 240ms ease}
 .ch-card:hover{transform:translateY(-4px) scale(1.03);border-color:rgba(255,255,255,0.1);box-shadow:var(--shadow-hover)}
-.ch-card .ch-thumb{width:100%;height:140px;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center}
-.ch-card .ch-thumb-bg{position:absolute;inset:0;opacity:0.5}
-.ch-card .ch-thumb-grad{position:absolute;bottom:0;left:0;right:0;height:60%;background:linear-gradient(to top,var(--surface),transparent);z-index:1}
-.ch-card .ch-thumb-label{font-family:var(--font-display);font-size:10px;color:rgba(255,255,255,0.8);letter-spacing:2px;text-align:center;padding:10px;word-break:break-word;position:relative;z-index:2}
+.ch-card .ch-thumb{width:100%;height:160px;position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.ch-card .ch-thumb-img{position:absolute;inset:0;background-size:cover;background-position:center;filter:brightness(0.35) saturate(1.4);transition:filter 400ms ease,transform 400ms ease}
+.ch-card:hover .ch-thumb-img{filter:brightness(0.5) saturate(1.6);transform:scale(1.08)}
+.ch-card .ch-thumb-overlay{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0.15) 0%,rgba(0,0,0,0.85) 100%);z-index:1}
+.ch-card .ch-thumb-icon{position:relative;z-index:2;font-size:32px;color:rgba(255,255,255,0.12);margin-bottom:4px}
+.ch-card .ch-thumb-label{font-family:var(--font-display);font-size:11px;color:rgba(255,255,255,0.95);letter-spacing:3px;text-align:center;padding:10px;word-break:break-word;position:relative;z-index:2;text-shadow:0 2px 12px rgba(0,0,0,0.8);font-weight:700}
+.ch-card .ch-thumb-src{font-family:var(--font-body);font-size:9px;color:rgba(255,255,255,0.5);letter-spacing:1px;text-align:center;position:relative;z-index:2;margin-top:-4px;text-transform:uppercase}
 .ch-card .live-badge{position:absolute;top:10px;left:10px;background:var(--red);color:#fff;font-size:9px;font-weight:700;padding:2px 8px;border-radius:4px;letter-spacing:1px;animation:livePulse 2s infinite;display:flex;align-items:center;gap:4px;z-index:3;font-family:var(--font-body)}
 .ch-card .live-badge::before{content:'';width:5px;height:5px;border-radius:50%;background:#fff;animation:dotPulse 1s infinite}
 .ch-card .ch-quality{position:absolute;top:10px;right:10px;background:rgba(0,0,0,0.7);color:var(--white);font-size:9px;font-weight:600;padding:2px 8px;border-radius:3px;letter-spacing:1px;z-index:3;border:1px solid rgba(255,255,255,0.15)}
@@ -133,7 +136,7 @@ header nav a.active::after{content:'';position:absolute;bottom:-2px;left:0;width
 
 /* ===== SKELETON CARDS ===== */
 .skeleton-card{background:var(--surface);border-radius:var(--radius-card);overflow:hidden;border:1px solid rgba(255,255,255,0.04)}
-.skeleton-thumb{width:100%;height:140px;background:linear-gradient(90deg,var(--elevated) 25%,#252525 50%,var(--elevated) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite}
+.skeleton-thumb{width:100%;height:160px;background:linear-gradient(90deg,var(--elevated) 25%,#252525 50%,var(--elevated) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite}
 .skeleton-body{padding:12px 14px}
 .skeleton-line{height:12px;background:linear-gradient(90deg,var(--elevated) 25%,#252525 50%,var(--elevated) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:4px;margin-bottom:8px}
 .skeleton-line.short{width:60%}
@@ -480,6 +483,54 @@ var CATS=[
 {id:"documentary",label:"Docs",icon:"fa-book"},
 {id:"international",label:"World",icon:"fa-earth-americas"}
 ];
+var CAT_IMG={
+news:'/logos/cat-news.png',
+sports:'/logos/cat-sports.png',
+movies:'/logos/cat-movies.png',
+entertainment:'/logos/cat-entertainment.png',
+music:'/logos/cat-music.png',
+kids:'/logos/cat-kids.png',
+documentary:'/logos/cat-documentary.png',
+international:'/logos/cat-international.png'
+};
+var CH_LOGO={
+1:'/logos/ch01-aljazeera-en.png',2:'/logos/ch02-aljazeera-ar.png',3:'/logos/ch03-france24-en.png',
+4:'/logos/ch04-france24-fr.png',5:'/logos/ch05-france24-ar.png',6:'/logos/ch06-dw-en.png',
+7:'/logos/ch07-dw-es.png',8:'/logos/ch08-abc-news.png',9:'/logos/ch09-abc-stream.png',
+10:'/logos/ch10-africa24.png',11:'/logos/ch11-euronews.png',12:'/logos/ch12-court-tv.png',
+13:'/logos/ch13-accdn.png',14:'/logos/ch14-cbs-golazo.png',15:'/logos/ch15-fifa-en.png',
+16:'/logos/ch16-fifa-es.png',17:'/logos/ch17-fubo-sports.png',18:'/logos/ch18-billiard.png',
+19:'/logos/ch19-ftf-sports.png',20:'/logos/ch20-fanduel-racing.png',21:'/logos/ch21-fanduel-tv.png',
+22:'/logos/ch22-dazn-combat.png',23:'/logos/ch23-glory-kick.png',24:'/logos/ch24-speed-sport.png',
+25:'/logos/ch25-artflix.png',26:'/logos/ch26-dust.png',27:'/logos/ch27-70s-cinema.png',
+28:'/logos/ch28-80s-rewind.png',29:'/logos/ch29-90s-throwback.png',30:'/logos/ch30-free-movies.png',
+31:'/logos/ch31-30a-classic.png',32:'/logos/ch32-rakuten-action.png',33:'/logos/ch33-rakuten-uk.png',
+34:'/logos/ch34-charge.png',35:'/logos/ch35-amc-reality.png',36:'/logos/ch36-allblk.png',
+37:'/logos/ch37-bounce-xl.png',38:'/logos/ch38-buzzr.png',39:'/logos/ch39-asiancrush.png',
+40:'/logos/ch40-afroland.png',41:'/logos/ch41-30a-tv.png',42:'/logos/ch42-forensic.png',
+43:'/logos/ch43-cmc.png',44:'/logos/ch44-30a-music.png',45:'/logos/ch45-dance-tv.png',
+46:'/logos/ch46-dance-edm.png',47:'/logos/ch47-dance-techno.png',48:'/logos/ch48-clubbing.png',
+49:'/logos/ch49-stingray-rock.png',50:'/logos/ch50-stingray-hits.png',51:'/logos/ch51-bbc-kids.png',
+52:'/logos/ch52-baby-shark.png',53:'/logos/ch53-brat-tv.png',54:'/logos/ch54-camp-spoopy.png',
+55:'/logos/ch55-avatar.png',56:'/logos/ch56-anime-vision.png',57:'/logos/ch57-docplus.png',
+58:'/logos/ch58-docurama.png',59:'/logos/ch59-dangertv.png',60:'/logos/ch60-curiosity.png',
+61:'/logos/ch61-4k-travel.png',62:'/logos/ch62-5min-craft.png',63:'/logos/ch63-bloomberg.png',
+64:'/logos/ch64-bbc-earth.png',65:'/logos/ch65-bbc-topgear.png',66:'/logos/ch66-alhurra.png',
+67:'/logos/ch67-abc5.png',68:'/logos/ch68-accuweather.png',69:'/logos/ch69-aj-mubasher.png',
+70:'/logos/ch70-france24-es.png',71:'/logos/ch71-africanews.png',72:'/logos/ch72-america-voice.png',
+73:'/logos/ch73-aci-sport.png',74:'/logos/ch74-fite.png',75:'/logos/ch75-sport-italia.png',
+76:'/logos/ch76-africa24sport.png'
+};
+var CAT_ICON={
+news:'fa-newspaper',
+sports:'fa-futbol',
+movies:'fa-film',
+entertainment:'fa-star',
+music:'fa-music',
+kids:'fa-child',
+documentary:'fa-book-open',
+international:'fa-earth-americas'
+};
 
 // ===== AUDIO SYSTEM =====
 var audioCtx=null;
@@ -565,11 +616,15 @@ function renderGrid(){
   var h='';
   for(var i=0;i<list.length;i++){
     var ch=list[i];
+    var catImg=CH_LOGO[ch.id]||CAT_IMG[ch.c]||CAT_IMG.news;
+    var catIcon=CAT_ICON[ch.c]||'fa-tv';
     h+='<div class="ch-card" data-id="'+ch.id+'">'+
       '<div class="ch-thumb">'+
-        '<div class="ch-thumb-bg" style="background:linear-gradient(135deg,'+ch.clr+','+ch.clr+'66)"></div>'+
-        '<div class="ch-thumb-grad"></div>'+
-        '<span class="ch-thumb-label">'+esc(ch.n)+'</span>'+
+        '<div class="ch-thumb-img" style="background-image:url(\''+catImg+'\');background-color:'+ch.clr+'"></div>'+
+        '<div class="ch-thumb-overlay"></div>'+
+        '<div class="ch-thumb-icon"><i class="fas '+catIcon+'"></i></div>'+
+        '<div class="ch-thumb-label">'+esc(ch.n)+'</div>'+
+        '<div class="ch-thumb-src">'+esc(ch.src)+'</div>'+
         '<span class="live-badge">LIVE</span>'+
         '<span class="ch-quality">'+ch.q+'</span>'+
         '<span class="ch-viewers"><i class="fas fa-eye"></i> '+fmtV(ch.v)+'</span>'+
@@ -613,7 +668,7 @@ function renderHero(){
     var ch=featured[i];
     var isActive=i===0?'active':'';
     sh+='<div class="hero-slide '+isActive+'" data-idx="'+i+'">'+
-      '<div class="slide-bg" style="background:linear-gradient(135deg,'+ch.clr+'44,'+ch.clr+'22)"></div>'+
+      '<div class="slide-bg" style="background-image:url(\''+(CH_LOGO[ch.id]||CAT_IMG[ch.c]||CAT_IMG.news)+'\');background-size:cover;background-position:center;background-color:'+ch.clr+'"></div>'+
       '<div class="slide-grad"></div>'+
       '<div class="slide-content">'+
         '<div class="slide-label">NOW STREAMING</div>'+
@@ -866,11 +921,15 @@ function doSearch(q){
   var h='';
   for(var i=0;i<results.length;i++){
     var ch=results[i];
+    var catImg=CH_LOGO[ch.id]||CAT_IMG[ch.c]||CAT_IMG.news;
+    var catIcon=CAT_ICON[ch.c]||'fa-tv';
     h+='<div class="ch-card visible" data-id="'+ch.id+'">'+
       '<div class="ch-thumb">'+
-        '<div class="ch-thumb-bg" style="background:linear-gradient(135deg,'+ch.clr+','+ch.clr+'66)"></div>'+
-        '<div class="ch-thumb-grad"></div>'+
-        '<span class="ch-thumb-label">'+esc(ch.n)+'</span>'+
+        '<div class="ch-thumb-img" style="background-image:url(\''+catImg+'\');background-color:'+ch.clr+'"></div>'+
+        '<div class="ch-thumb-overlay"></div>'+
+        '<div class="ch-thumb-icon"><i class="fas '+catIcon+'"></i></div>'+
+        '<div class="ch-thumb-label">'+esc(ch.n)+'</div>'+
+        '<div class="ch-thumb-src">'+esc(ch.src)+'</div>'+
         '<span class="live-badge">LIVE</span>'+
         '<span class="ch-quality">'+ch.q+'</span>'+
         '<span class="ch-viewers"><i class="fas fa-eye"></i> '+fmtV(ch.v)+'</span>'+
