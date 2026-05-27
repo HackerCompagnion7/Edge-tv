@@ -501,18 +501,21 @@ export default {
       if (!mistralKey || !frameB64) return null;
       return enqueueVision(async () => {
         try {
-          const promptText = `Eres un experto identificador de contenido en TV IPTV. Canal: "${channelName}" (${category}).
+          const promptText = `Eres EDGE Vision, experto identificador de contenido TV IPTV. Canal: "${channelName}" (${category}).
 
-Analiza esta captura de pantalla del canal. Responde SOLO con JSON valido:
+Analiza esta captura de pantalla del canal con MAXIMA ATENCION. Responde SOLO con JSON valido:
 {"title":"titulo exacto","type":"movie|series|sports|music|kids|news|unknown","confidence":0.0-1.0,"year":"ano","genre":["genero1"],"alternatives":[{"title":"...","confidence":0.0}]}
 
-REGLAS CRITICAS:
-- Si ves una escena de pelicula, identifica la PELICULA ESPECIFICA (titulo real en ingles si lo conoces)
-- Presta atencion a: actores reconocibles, escenas iconicas, logos de estudio, texto en pantalla
-- Si es ciencia ficcion/terror con naves o alienigenas, piensa en: Alien, Aliens, Prometheus, The Thing, Event Horizon, Life, Species, etc.
+REGLAS CRITICAS - NUNCA DIGAS QUE NO PUEDES:
+- SIEMPRE intenta identificar - NUNCA respondas que no puedes
+- Si ves una escena de pelicula, identifica la PELICULA ESPECIFICA (titulo real)
+- Presta atencion a: rostros de actores, escenas iconicas, logos de estudio, texto en pantalla, efectos especiales
+- Si es ciencia ficcion/terror con naves o alienigenas, piensa en: Alien (1979), Aliens (1986), Alien 3 (1992), Prometheus (2012), Alien: Covenant (2017), The Thing (1982), Event Horizon (1997), Life (2017), Species (1995), Predator (1987), AVP (2004), District 9 (2009), Arrival (2016)
+- Si ves actores reconocibles, usalos como pista principal
+- Busca TEXTO en pantalla: titulos, creditos, subtitulos, logos de canal
 - Si no estas 100% seguro del titulo, pon confidence < 0.7 y agrega alternatives
 - Si ves un logo de canal de peliculas, intenta identificar la pelicula por la escena
-- Si no reconoces nada, responde: {"title":"","type":"unknown","confidence":0}`;
+- Si no reconoces nada con certeza, da tu mejor estimacion con confidence baja y alternatives`;
 
           const resp = await fetch('https://api.mistral.ai/v1/chat/completions', {
             method: 'POST',
@@ -742,7 +745,7 @@ REGLAS CRITICAS:
       }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
     }
 
-    // Mistral AI proxy
+    // Mistral AI proxy (text-only)
     if (url.pathname === '/api/ai' && request.method === 'POST') {
       try {
         const body = await request.json();
@@ -755,6 +758,210 @@ REGLAS CRITICAS:
         });
         const data = await resp.json();
         return new Response(JSON.stringify(data), { status: resp.status, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+      } catch (e) {
+        return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+      }
+    }
+
+    // ============================================================
+    // API: Vision Chat - AI Assistant WITH EYES
+    // Captures video frame + question → identifies what's playing
+    // Uses Mistral Pixtral (vision) or falls back to TMDB context
+    // ============================================================
+    if (url.pathname === '/api/vision-chat' && request.method === 'POST') {
+      try {
+        const body = await request.json();
+        const { question, frame, channelName, category, channelId } = body;
+        if (!question) return new Response(JSON.stringify({ error: 'question required' }), { status: 400, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+
+        const mistralKey = env.MISTRAL_API || env.MISTRAL_API_KEY || '';
+        const qLower = (question || '').toLowerCase();
+
+        // Check if question is about content identification
+        const isContentQuery = ['que pelicula','que esta','que dan','que ponen','que se ve','what movie','what show','what playing','que serie','que programa','what is this','que es esto','que estan dando','identifica','detecta','que ves','what do you see','que hay en','que sale'].some(k => qLower.includes(k));
+
+        // ============================================================
+        // SYSTEM PROMPT - Professional TV Content Identifier
+        // ============================================================
+        const systemPrompt = `Eres EDGE Vision, el asistente de inteligencia artificial de EDGE TV IPTV. Tu funcion PRINCIPAL es identificar contenido audiovisual en tiempo real.
+
+IDENTIDAD:
+- Nombre: EDGE Vision
+- Creador: EDGE TV
+- Funcion: Identificar peliculas, series, deportes y cualquier contenido que este reproduciendose en los canales de EDGE TV
+- Tienes acceso a la captura de pantalla EN VIVO del canal que el usuario esta viendo
+
+REGLAS CRITICAS - NUNCA VIOLAR:
+1. NUNCA digas "No puedo" o "No tengo acceso" - SIEMPRE intenta identificar el contenido
+2. Si tienes una imagen, ANALIZALA detalladamente - busca actores, escenas, efectos especiales, logos, texto
+3. Si no estas 100% seguro, da tu mejor estimacion con confianza parcial y sugiere alternativas
+4. Responde en el mismo idioma que el usuario te pregunto
+5. Se conciso pero informativo - maximo 3 lineas de respuesta
+6. Si es una pelicula de terror/ciencia ficcion con alienigenas/naves, piensa en: Alien (1979), Aliens (1986), Alien 3 (1992), Prometheus (2012), Alien: Covenant (2017), The Thing (1982), Event Horizon (1997), Life (2017), Species (1995), Predator (1987), AVP (2004), District 9 (2009), Arrival (2016)
+7. Si ves actores reconocibles, usalos como pista principal
+8. Si hay texto en pantalla (titulos, creditos, logos de canal), usalo como evidencia fuerte
+
+FORMATO DE RESPUESTA:
+- Si identificas el contenido: "[Titulo] ([ano]) - [descripcion breve]"
+- Si no estas seguro: "Parece [titulo probable] ([ano]) - [razon]. Alternativas: [otra1], [otra2]"
+- Si no puedes ver nada: "No logro ver claramente la imagen. Prueba: [sugerencia]"
+
+CANALES DISPONIBLES: ${channelName || 'Desconocido'} (${category || 'general'})`;
+
+        // ============================================================
+        // PRIORITY 1: Vision-based identification (with frame)
+        // ============================================================
+        if (frame && mistralKey && isContentQuery) {
+          try {
+            const visionPrompt = `ANALIZA ESTA CAPTURA DE PANTALLA del canal "${channelName || 'desconocido'}" (categoria: ${category || 'general'}).
+
+${question}
+
+INSTRUCCIONES:
+- Mira TODA la imagen con atencion - cada detalle cuenta
+- Busca: rostros de actores, escenas reconocibles, efectos especiales, naves espaciales, alienigenas, monstruos
+- Busca TEXTO en pantalla: titulos, creditos, logos, subtitulos, nombre del canal
+- Si ves una escena de ciencia ficcion/terror con naves o alienigenas, considera: Alien, Aliens, Prometheus, The Thing, Event Horizon, Life, Species, Predator
+- Si ves actores conocidos, identificalos
+- Responde con el titulo EXACTO de la pelicula o serie si lo reconoces
+- Si no estas seguro, da tu mejor estimacion y lista alternativas
+- NUNCA digas que no puedes identificar - SIEMPRE intenta`;
+
+            const visionResp = await fetch('https://api.mistral.ai/v1/chat/completions', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + mistralKey },
+              signal: AbortSignal.timeout(20000),
+              body: JSON.stringify({
+                model: 'pixtral-12b-2409',
+                messages: [
+                  { role: 'system', content: systemPrompt },
+                  { role: 'user', content: [
+                    { type: 'text', text: visionPrompt },
+                    { type: 'image_url', image_url: `data:image/jpeg;base64,${frame}` }
+                  ]}
+                ],
+                temperature: 0.1,
+                max_tokens: 400
+              })
+            });
+
+            const visionData = await visionResp.json();
+            const visionContent = visionData.choices?.[0]?.message?.content || '';
+
+            if (visionContent) {
+              // Try to extract movie title for TMDB enrichment
+              let detectedTitle = null;
+              let detectedYear = null;
+              const titleMatch = visionContent.match(/"([^"]+)"\s*\(?((?:19|20)\d{2})\)?/);
+              if (titleMatch) {
+                detectedTitle = titleMatch[1];
+                detectedYear = titleMatch[2];
+              } else {
+                const simpleMatch = visionContent.match(/^([A-Z][A-Za-z0-9: ]+?)(?:\s*\(|\s*-|\s*\.)/);
+                if (simpleMatch) detectedTitle = simpleMatch[1].trim();
+              }
+
+              // Enrich with TMDB if we found a title
+              let enrichedResponse = visionContent;
+              if (detectedTitle) {
+                const tmdbData = await getPosterFromTMDB(detectedTitle, 'movie', detectedYear);
+                if (tmdbData) {
+                  enrichedResponse += tmdbData.overview ? `\n\nSinopsis: ${tmdbData.overview.substring(0, 150)}...` : '';
+                  enrichedResponse += tmdbData.rating ? ` | Rating: ${tmdbData.rating.toFixed(1)}/10` : '';
+                  enrichedResponse += tmdbData.year ? ` | Ano: ${tmdbData.year}` : '';
+                }
+              }
+
+              // Cache as detection for the channel
+              if (channelId) {
+                const cacheKey = getCacheKey('detect', String(channelId));
+                const detection = {
+                  title: detectedTitle || visionContent.substring(0, 60),
+                  type: inferContentType(channelName + ' ' + visionContent),
+                  confidence: detectedTitle ? 0.85 : 0.60,
+                  source: 'vision_chat',
+                  year: detectedYear,
+                  channelId: String(channelId),
+                  timestamp: Date.now()
+                };
+                if (detectedTitle) {
+                  const tmdbExtra = await getPosterFromTMDB(detectedTitle, 'movie', detectedYear);
+                  if (tmdbExtra?.poster) detection.poster = tmdbExtra.poster;
+                  if (tmdbExtra?.backdrop) detection.backdrop = tmdbExtra.backdrop;
+                  if (tmdbExtra?.overview) detection.overview = tmdbExtra.overview;
+                  if (tmdbExtra?.rating) detection.rating = tmdbExtra.rating;
+                  if (tmdbExtra?.tmdb_id) detection.tmdb_id = tmdbExtra.tmdb_id;
+                }
+                setCache(detectionCache, cacheKey, detection);
+                updateChannelState(String(channelId), detection, null, 'vision_chat');
+              }
+
+              recordVision();
+              return new Response(JSON.stringify({
+                response: enrichedResponse,
+                source: 'vision',
+                title: detectedTitle,
+                year: detectedYear
+              }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+            }
+          } catch (e) {
+            console.error('Vision chat error:', e);
+          }
+        }
+
+        // ============================================================
+        // PRIORITY 2: Text-only Mistral chat (no frame or non-content query)
+        // ============================================================
+        if (mistralKey) {
+          try {
+            const textResp = await fetch('https://api.mistral.ai/v1/chat/completions', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + mistralKey },
+              signal: AbortSignal.timeout(15000),
+              body: JSON.stringify({
+                model: 'mistral-small',
+                messages: [
+                  { role: 'system', content: systemPrompt },
+                  { role: 'user', content: question }
+                ],
+                temperature: 0.3,
+                max_tokens: 300
+              })
+            });
+            const textData = await textResp.json();
+            const textContent = textData.choices?.[0]?.message?.content || '';
+            if (textContent) {
+              return new Response(JSON.stringify({
+                response: textContent,
+                source: 'text_chat'
+              }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+            }
+          } catch (e) {
+            console.error('Text chat error:', e);
+          }
+        }
+
+        // ============================================================
+        // PRIORITY 3: TMDB-based fallback (no Mistral API key)
+        // ============================================================
+        if (channelName || category) {
+          const genreResult = await detectFromTMDBGenre(channelName || '', category || 'default');
+          if (genreResult && genreResult.candidates?.length > 0) {
+            const top5 = genreResult.candidates.slice(0, 5).map(c => `${c.title} (${c.year || '?'})`).join(', ');
+            return new Response(JSON.stringify({
+              response: `No tengo vision directa, pero segun el canal "${channelName}" (${category}), las peliculas mas probables son: ${top5}`,
+              source: 'tmdb_fallback',
+              candidates: genreResult.candidates
+            }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+          }
+        }
+
+        // Final fallback
+        return new Response(JSON.stringify({
+          response: 'Configura MISTRAL_API en Cloudflare Workers para activar la vision AI. Mientras tanto, puedo sugerir canales por categoria.',
+          source: 'fallback'
+        }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+
       } catch (e) {
         return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
       }
@@ -792,7 +999,7 @@ REGLAS CRITICAS:
       const tmdbConfigured = !!(env.TMDB_API_KEY || env.TMDB_ACCESS_TOKEN);
       const mistralConfigured = !!(env.MISTRAL_API || env.MISTRAL_API_KEY);
       return new Response(JSON.stringify({
-        version: 'v3',
+        version: 'v4',
         tmdb: tmdbConfigured,
         mistral: mistralConfigured,
         features: [
@@ -802,11 +1009,12 @@ REGLAS CRITICAS:
           'tmdb_poster_lookup',
           'tmdb_trending',
           'vision_detection',
+          'vision_chat',
           'manual_identification',
           'scene_change_detection',
           'batch_detection'
         ].filter(f => {
-          if (f === 'vision_detection') return mistralConfigured;
+          if (f === 'vision_detection' || f === 'vision_chat') return mistralConfigured;
           if (f === 'tmdb_poster_lookup' || f === 'tmdb_genre_detection' || f === 'tmdb_trending') return tmdbConfigured;
           return true;
         }),
@@ -1142,10 +1350,10 @@ footer .f-stats .stat strong{color:var(--white);font-family:var(--font-display)}
 <header><div class="logo-mark">E<span>D</span>GE</div><nav><a href="#" class="active" data-nav="home"><i class="fas fa-home"></i><span>Home</span></a><a href="#" data-nav="live"><i class="fas fa-tv"></i><span>Live</span></a><a href="#" data-nav="sports"><i class="fas fa-futbol"></i><span>Sports</span></a><a href="#" data-nav="news"><i class="fas fa-newspaper"></i><span>News</span></a></nav><div class="hdr-right"><button id="sound-toggle" title="Toggle Sound"><i class="fas fa-volume-mute"></i></button><button id="search-toggle" title="Search"><i class="fas fa-search"></i></button></div></header>
 <div id="search-box"><input type="text" id="search-input" placeholder="Buscar canales..."></div>
 <section class="hero" id="hero-section"><div id="hero-slides"></div><div class="hero-arrows"><button id="hero-prev"><i class="fas fa-chevron-left"></i></button><button id="hero-next"><i class="fas fa-chevron-right"></i></button><div class="hero-dots" id="hero-dots"></div></section>
-<div class="main-layout"><main class="main-content"><section id="continue-section" style="display:none"><h2 class="section-title"><span class="st-bar"></span>Continue Watching<span class="st-badge" id="cw-count">0</span></h2><div class="cw-scroll" id="cw-scroll"></div></section><section id="channels-section"><h2 class="section-title"><span class="st-bar"></span>Canales en Vivo<span class="st-count" id="ch-count"></span></h2><div class="cat-filter" id="cat-filter"></div><div class="channels-grid" id="channels-grid"></div></section><section id="upcoming-section" style="margin-top:40px"><h2 class="section-title"><span class="st-bar"></span>Coming Up</h2><div class="upcoming-scroll" id="upcoming-scroll"></div></section></main><aside class="sidebar"><div class="sidebar-section"><div class="sidebar-toggle" id="on-air-toggle"><h3><i class="fas fa-broadcast-tower"></i>En Vivo Ahora</h3><i class="fas fa-chevron-down chevron"></i></div><div class="sidebar-body" id="on-air-body"></div></div><div class="sidebar-section"><div class="sidebar-toggle" id="trending-toggle"><h3><i class="fas fa-fire"></i>Tendencias</h3><i class="fas fa-chevron-down chevron"></i></div><div class="sidebar-body" id="trending-body"></div></div><div class="sidebar-section"><div class="sidebar-toggle" id="mistral-toggle"><h3><i class="fas fa-robot"></i>Asistente IA</h3><i class="fas fa-chevron-down chevron"></i></div><div class="sidebar-body" id="mistral-body"><div class="mp-chat"><div class="mp-msg" id="mistral-msg">Preguntame sobre canales!</div><div class="mp-input-wrap"><input class="mp-input" id="mistral-input" placeholder="Pregunta sobre canales..."><button class="mp-send" id="mistral-send"><i class="fas fa-paper-plane"></i></button></div></div></div></div></aside></div>
+<div class="main-layout"><main class="main-content"><section id="continue-section" style="display:none"><h2 class="section-title"><span class="st-bar"></span>Continue Watching<span class="st-badge" id="cw-count">0</span></h2><div class="cw-scroll" id="cw-scroll"></div></section><section id="channels-section"><h2 class="section-title"><span class="st-bar"></span>Canales en Vivo<span class="st-count" id="ch-count"></span></h2><div class="cat-filter" id="cat-filter"></div><div class="channels-grid" id="channels-grid"></div></section><section id="upcoming-section" style="margin-top:40px"><h2 class="section-title"><span class="st-bar"></span>Coming Up</h2><div class="upcoming-scroll" id="upcoming-scroll"></div></section></main><aside class="sidebar"><div class="sidebar-section"><div class="sidebar-toggle" id="on-air-toggle"><h3><i class="fas fa-broadcast-tower"></i>En Vivo Ahora</h3><i class="fas fa-chevron-down chevron"></i></div><div class="sidebar-body" id="on-air-body"></div></div><div class="sidebar-section"><div class="sidebar-toggle" id="trending-toggle"><h3><i class="fas fa-fire"></i>Tendencias</h3><i class="fas fa-chevron-down chevron"></i></div><div class="sidebar-body" id="trending-body"></div></div><div class="sidebar-section"><div class="sidebar-toggle" id="mistral-toggle"><h3><i class="fas fa-robot"></i>EDGE Vision IA</h3><i class="fas fa-chevron-down chevron"></i></div><div class="sidebar-body" id="mistral-body"><div class="mp-chat"><div class="mp-msg" id="mistral-msg"><i class="fas fa-eye" style="margin-right:4px;color:var(--red)"></i>Puedo ver lo que ves! Preguntame: "Que pelicula estan dando?"</div><div class="mp-input-wrap"><input class="mp-input" id="mistral-input" placeholder="Que pelicula estan dando?"><button class="mp-send" id="mistral-send"><i class="fas fa-paper-plane"></i></button></div></div></div></div></aside></div>
 <div id="player-modal"><div class="player-wrap"><button class="player-close" id="player-close"><i class="fas fa-times"></i></button><video id="hls-video" muted playsinline></video><div class="player-spinner" id="player-spinner"><div class="spinner-ring"></div></div><div class="buffering-overlay" id="buffering-overlay"><div class="buffer-pulse"></div></div><div class="offline-overlay" id="offline-overlay"><i class="fas fa-signal off-icon"></i><div class="off-text">CANAL OFFLINE</div><div class="off-hint">Este canal puede estar bloqueado. Prueba otro o usa VPN.</div><button class="btn-retry" id="btn-retry"><i class="fas fa-redo"></i> Reintentar</button><button class="btn-switch" id="btn-switch"><i class="fas fa-exchange-alt"></i> Siguiente Canal</button></div><div class="player-now-playing" id="player-now-playing" style="display:none;position:relative;overflow:hidden"><div class="pnp-backdrop" id="pnp-backdrop"></div><img class="pnp-poster" id="pnp-poster" src="" alt=""><div class="pnp-info"><div class="pnp-title" id="pnp-title">-</div><div class="pnp-meta"><span class="pnp-type" id="pnp-type">-</span><span class="pnp-year" id="pnp-year"></span><span class="pnp-rating" id="pnp-rating"></span><span class="pnp-confidence" id="pnp-confidence"></span></div><div class="pnp-overview" id="pnp-overview"></div></div></div><div class="player-bar"><button id="play-pause"><i class="fas fa-play"></i></button><button id="vol-btn"><i class="fas fa-volume-mute"></i></button><input type="range" id="vol-slider" min="0" max="100" value="0" class="vol-slider"><span class="p-title" id="player-title">-</span><span class="p-quality" id="quality-indicator">HD</span><span class="p-status connecting" id="player-status">CONNECTING</span><button id="detect-btn" title="Detect content"><i class="fas fa-magic"></i></button><button id="audio-btn"><i class="fas fa-headphones"></i></button><button id="fullscreen-btn"><i class="fas fa-expand"></i></button></div></div></div>
 <div class="toast" id="toast"></div>
-<footer><div class="f-brand">EDGE <span>v9.0</span> &mdash; IPTV 100% Gratis</div><div class="f-stats"><div class="stat"><strong id="stat-ch">211</strong> canales</div><div class="stat"><strong id="stat-hd">211</strong> HD</div><div class="stat"><strong>5</strong> categorias</div><div class="stat"><strong id="stat-detect">0</strong> detectados</div></div></footer>
+<footer><div class="f-brand">EDGE <span>v10.0</span> &mdash; IPTV 100% Gratis</div><div class="f-stats"><div class="stat"><strong id="stat-ch">211</strong> canales</div><div class="stat"><strong id="stat-hd">211</strong> HD</div><div class="stat"><strong>5</strong> categorias</div><div class="stat"><strong id="stat-detect">0</strong> detectados</div></div></footer>
 <script>
 (function(){function k(){var s=document.getElementById('splash');if(s)s.classList.add('hide');}setTimeout(k,2500);setTimeout(k,3500);setTimeout(k,5000);document.addEventListener('DOMContentLoaded',function(){setTimeout(k,800);});window.addEventListener('load',function(){setTimeout(k,300);});window.onerror=function(){k();return true;};})();
 <\/script>
@@ -1742,8 +1950,73 @@ function doSearch(q){q=q.toLowerCase().trim();if(!q){curFilter='all';renderGrid(
 
 function updateStats(){var c=document.getElementById('stat-ch'),h=document.getElementById('stat-hd');if(c)c.textContent=CHANNELS.length;if(h)h.textContent=CHANNELS.filter(function(ch){return ch.q==='1080p';}).length;}
 
-function askMistral(q,ctx){var m=document.getElementById('mistral-msg');if(!m)return;m.textContent='Thinking...';var sp='You are EDGE IPTV assistant. '+CHANNELS.length+' free HD channels. ';var cats={};for(var i=0;i<CHANNELS.length;i++){var ch=CHANNELS[i];if(!cats[ch.c])cats[ch.c]=[];cats[ch.c].push(ch.n);}for(var k in cats)sp+=k+': '+cats[k].join(', ')+'. ';if(ctx)sp+='Watching: '+ctx+'. ';sp+='Be brief. Recommend by name.';
-fetch('/api/ai',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:[{role:'system',content:sp},{role:'user',content:q}],max_tokens:200})}).then(function(r){return r.json();}).then(function(d){if(d.choices&&d.choices[0])m.textContent=d.choices[0].message.content;else if(d.error)m.textContent=typeof d.error==='string'?d.error:JSON.stringify(d.error);else m.textContent='No response.';}).catch(function(){var ql=q.toLowerCase(),mt=CHANNELS.filter(function(ch){return ch.n.toLowerCase().indexOf(ql)>=0||ch.c.indexOf(ql)>=0;}).slice(0,5);m.textContent=mt.length?'Try: '+mt.map(function(c){return c.n+' ('+catLabel(c.c)+')';}).join(', '):'No matches. Try "news" or "sports".';});}
+function askMistral(q,ctx){
+  var m=document.getElementById('mistral-msg');
+  if(!m)return;
+  m.innerHTML='<i class="fas fa-eye" style="margin-right:6px;color:var(--red)"></i>Analizando pantalla...';
+
+  // Capture current video frame for vision analysis
+  var video=document.getElementById('hls-video');
+  var frame=null;
+  if(video&&video.videoWidth>0){
+    try{
+      var c=document.createElement('canvas');
+      var scale=0.5; // Higher quality capture (50% instead of 25%)
+      c.width=Math.max(1,Math.floor(video.videoWidth*scale));
+      c.height=Math.max(1,Math.floor(video.videoHeight*scale));
+      var ctx2=c.getContext('2d');
+      ctx2.drawImage(video,0,0,c.width,c.height);
+      frame=c.toDataURL('image/jpeg',0.7).split(',')[1]; // Better JPEG quality
+    }catch(e){frame=null;}
+  }
+
+  // Determine current channel context
+  var channelName=curCh?curCh.n:'';
+  var category=curCh?curCh.c:'default';
+  var channelId=curCh?curCh.id:null;
+
+  // Send to Vision Chat endpoint (with frame if available)
+  var body={
+    question:q,
+    channelName:channelName,
+    category:category,
+    channelId:channelId
+  };
+  if(frame)body.frame=frame;
+
+  fetch('/api/vision-chat',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(body)
+  }).then(function(r){return r.json();}).then(function(d){
+    if(d.response){
+      var html='';
+      if(d.source==='vision'){
+        html='<i class="fas fa-eye" style="margin-right:4px;color:#ff9800;font-size:10px" title="Detectado por Vision AI"></i>';
+      }else if(d.source==='tmdb_fallback'){
+        html='<i class="fas fa-film" style="margin-right:4px;color:#2196f3;font-size:10px" title="Detectado por TMDB"></i>';
+      }else if(d.source==='text_chat'){
+        html='<i class="fas fa-comment" style="margin-right:4px;color:#4caf50;font-size:10px" title="Respuesta de texto"></i>';
+      }
+      html+=esc(d.response);
+      m.innerHTML=html;
+    }else if(d.error){
+      m.innerHTML='<i class="fas fa-exclamation-triangle" style="margin-right:4px;color:#ff5722;font-size:10px"></i>'+esc(typeof d.error==='string'?d.error:JSON.stringify(d.error));
+    }else{
+      m.textContent='No se obtuvo respuesta.';
+    }
+  }).catch(function(){
+    // Local fallback when API fails
+    var ql=q.toLowerCase();
+    var isContentQ=['que pelicula','que esta','que dan','que ponen','que serie','what movie','what playing','identifica','detecta'].some(function(k){return ql.indexOf(k)>=0;});
+    if(isContentQ&&channelName){
+      m.innerHTML='<i class="fas fa-film" style="margin-right:4px;color:#2196f3;font-size:10px"></i>Estas viendo: <strong>'+esc(channelName)+'</strong> ('+catLabel(category)+'). La vision AI requiere MISTRAL_API configurado.';
+    }else{
+      var mt=CHANNELS.filter(function(ch){return ch.n.toLowerCase().indexOf(ql)>=0||ch.c.indexOf(ql)>=0;}).slice(0,5);
+      m.innerHTML=mt.length?'<i class="fas fa-search" style="margin-right:4px;color:#4caf50;font-size:10px"></i>Encontrado: '+mt.map(function(c){return '<strong>'+esc(c.n)+'</strong> ('+catLabel(c.c)+')';}).join(', '):'<i class="fas fa-times-circle" style="margin-right:4px;color:#ff5722;font-size:10px"></i>No encontrado. Prueba "terror" o "sports".';
+    }
+  });
+}
 
 // Predictive Preload: prefetch next channel's .m3u8 manifest
 var preloaded={};
@@ -1837,12 +2110,15 @@ function captureFrame(video,quality){
   if(!video||!video.videoWidth)return null;
   try{
     var c=document.createElement('canvas');
-    var scale=0.25;
+    var scale=0.5; // Improved: 50% scale for better vision accuracy
     c.width=Math.max(1,Math.floor(video.videoWidth*scale));
     c.height=Math.max(1,Math.floor(video.videoHeight*scale));
     var ctx=c.getContext('2d');
     ctx.drawImage(video,0,0,c.width,c.height);
-    return c.toDataURL('image/jpeg',quality||0.5).split(',')[1];
+    // Enhanced quality: minimum 0.6 JPEG quality for better OCR/vision
+    var q=quality||0.6;
+    if(q<0.6)q=0.6;
+    return c.toDataURL('image/jpeg',q).split(',')[1];
   }catch(e){return null;}
 }
 
