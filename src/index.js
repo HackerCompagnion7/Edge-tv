@@ -633,14 +633,14 @@ function renderGrid(){
     var ch=list[i];
     var catGrad=CAT_GRAD[ch.c]||CAT_GRAD.news;
     var catIcon=CAT_ICON[ch.c]||'fa-tv';
-    var logoHtml=ch.logo?'<img class="ch-logo" src="'+ch.logo+'" alt="'+esc(ch.n)+'" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\';">':'';
-    var iconStyle=ch.logo?'style="display:none"':'';
+    var logoHtml=ch.logo?'<img class="ch-logo" src="'+ch.logo+'" alt="'+esc(ch.n)+'" onerror="this.parentNode.removeChild(this)">':'';
+    var iconStyle=ch.logo?'':'<i class="fas '+catIcon+' ch-thumb-icon"></i>';
     h+='<div class="ch-card" data-id="'+ch.id+'">'+
       '<div class="ch-thumb">'+
         '<div class="ch-thumb-img" style="background:'+catGrad+'"></div>'+
         '<div class="ch-thumb-overlay"></div>'+
         logoHtml+
-        '<div class="ch-thumb-icon" '+iconStyle+'><i class="fas '+catIcon+'"></i></div>'+
+        iconStyle+
         '<div class="ch-thumb-label">'+esc(ch.n)+'</div>'+
         '<div class="ch-thumb-src">'+esc(ch.src)+'</div>'+
         '<span class="live-badge">LIVE</span>'+
@@ -686,7 +686,7 @@ function renderHero(){
   for(var i=0;i<featured.length;i++){
     var ch=featured[i];
     var isActive=i===0?'active':'';
-    var logoHtml=ch.logo?'<img class="slide-logo" src="'+ch.logo+'" alt="'+esc(ch.n)+'" onerror="this.style.display=\'none\'">':'';
+    var logoHtml=ch.logo?'<img class="slide-logo" src="'+ch.logo+'" alt="'+esc(ch.n)+'" onerror="this.parentNode.removeChild(this)">':'';
     sh+='<div class="hero-slide '+isActive+'" data-idx="'+i+'">'+
       '<div class="slide-bg" style="background:'+(CAT_GRAD[ch.c]||CAT_GRAD.news)+'"></div>'+
       '<div class="slide-grad"></div>'+
@@ -742,7 +742,7 @@ function renderSidebar(){
     var oh='';
     for(var i=0;i<topCh.length;i++){
       var ch=topCh[i];
-      var logoHtml=ch.logo?'<img class="oa-logo" src="'+ch.logo+'" onerror="this.style.display=\'none\'">':'';
+      var logoHtml=ch.logo?'<img class="oa-logo" src="'+ch.logo+'" onerror="this.parentNode.removeChild(this)">':'';
       oh+='<div class="on-air-ch" data-id="'+ch.id+'"><div class="oa-dot"></div>'+logoHtml+'<span class="oa-name">'+esc(ch.n)+'</span><span class="oa-viewers">'+fmtV(ch.v)+'</span></div>';
     }
     onAirBody.innerHTML=oh;
@@ -751,7 +751,7 @@ function renderSidebar(){
     var th='';
     for(var j=0;j<topCh.length;j++){
       var tc=topCh[j];
-      var logoHtml2=tc.logo?'<img class="tr-logo" src="'+tc.logo+'" onerror="this.style.display=\'none\'">':'';
+      var logoHtml2=tc.logo?'<img class="tr-logo" src="'+tc.logo+'" onerror="this.parentNode.removeChild(this)">':'';
       th+='<div class="trending-item" data-id="'+tc.id+'"><span class="tr-rank">'+(j+1)+'</span>'+logoHtml2+'<span class="tr-name">'+esc(tc.n)+'</span><span class="tr-viewers">'+fmtV(tc.v)+'</span></div>';
     }
     trendingBody.innerHTML=th;
@@ -938,14 +938,14 @@ function doSearch(q){
     var ch=results[i];
     var catGrad=CAT_GRAD[ch.c]||CAT_GRAD.news;
     var catIcon=CAT_ICON[ch.c]||'fa-tv';
-    var logoHtml=ch.logo?'<img class="ch-logo" src="'+ch.logo+'" alt="'+esc(ch.n)+'" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\';">':'';
-    var iconStyle=ch.logo?'style="display:none"':'';
+    var logoHtml=ch.logo?'<img class="ch-logo" src="'+ch.logo+'" alt="'+esc(ch.n)+'" onerror="this.parentNode.removeChild(this)">':'';
+    var iconStyle=ch.logo?'':'<i class="fas '+catIcon+' ch-thumb-icon"></i>';
     h+='<div class="ch-card visible" data-id="'+ch.id+'">'+
       '<div class="ch-thumb">'+
         '<div class="ch-thumb-img" style="background:'+catGrad+'"></div>'+
         '<div class="ch-thumb-overlay"></div>'+
         logoHtml+
-        '<div class="ch-thumb-icon" '+iconStyle+'><i class="fas '+catIcon+'"></i></div>'+
+        iconStyle+
         '<div class="ch-thumb-label">'+esc(ch.n)+'</div>'+
         '<div class="ch-thumb-src">'+esc(ch.src)+'</div>'+
         '<span class="live-badge">LIVE</span>'+
