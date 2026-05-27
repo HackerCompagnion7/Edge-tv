@@ -93,8 +93,9 @@ export default {
     }
 
     // ============================================================
-    // EDGE MVP ENGINE - Content Detection System
-    // Ported from Python MVP - Production Ready
+    // EDGE MVP ENGINE v2 - Production Content Detection System
+    // Full Feature Parity with Python MVP
+    // Pipeline: Metadata -> EPG -> OCR -> Vision (priority order)
     // ============================================================
 
     const EDGE_CONFIG = {
@@ -104,6 +105,8 @@ export default {
         series: { interval: 45, vision: false },
         news: { interval: 120, vision: false },
         music: { interval: 90, vision: false },
+        french: { interval: 60, vision: false },
+        kids: { interval: 60, vision: false },
         default: { interval: 60, vision: false }
       },
       CONFIDENCE: {
@@ -111,24 +114,33 @@ export default {
         now_playing: 0.85,
         vision_accept: 0.70,
         epg_accept: 0.85,
-        metadata_accept: 0.90
+        metadata_accept: 0.90,
+        ocr_accept: 0.60,
+        scene_threshold: 0.05
       },
-      CACHE_TTL: { poster: 86400, detection: 3600, epg: 300 },
+      CACHE_TTL: { poster: 86400, detection: 3600, epg: 300, channel_state: 1800 },
       DAILY_BUDGET: 5.0,
       PROVIDER_COSTS: { vision: 0.0025, ocr: 0.0005 },
       TMDB_API_URL: 'https://api.themoviedb.org/3',
-      VISION_TIMEOUT: 10000
+      VISION_TIMEOUT: 12000,
+      VISION_MAX_CONCURRENT: 2,
+      VISION_QUEUE_MAX: 20,
+      SCENE_HASH_THRESHOLD: 0.10
     };
 
-    // Simple in-memory caches (per-isolate, persists across requests)
+    // ============================================================
+    // Cache System (LRU with TTL)
+    // ============================================================
     const detectionCache = new Map();
     const posterCache = new Map();
-    let costState = { spent: 0, visionCount: 0, lastReset: new Date().toDateString() };
+    const epgCache = new Map();
+    const channelStates = new Map();
+    let costState = { spent: 0, visionCount: 0, ocrCount: 0, lastReset: new Date().toDateString() };
 
     function resetCostIfNeeded() {
       const today = new Date().toDateString();
       if (today !== costState.lastReset) {
-        costState = { spent: 0, visionCount: 0, lastReset: today };
+        costState = { spent: 0, visionCount: 0, ocrCount: 0, lastReset: today };
       }
     }
 
@@ -137,10 +149,21 @@ export default {
       return costState.spent + EDGE_CONFIG.PROVIDER_COSTS.vision <= EDGE_CONFIG.DAILY_BUDGET;
     }
 
+    function canUseOCR() {
+      resetCostIfNeeded();
+      return costState.spent + EDGE_CONFIG.PROVIDER_COSTS.ocr <= EDGE_CONFIG.DAILY_BUDGET;
+    }
+
     function recordVision() {
       resetCostIfNeeded();
       costState.spent += EDGE_CONFIG.PROVIDER_COSTS.vision;
       costState.visionCount++;
+    }
+
+    function recordOCR() {
+      resetCostIfNeeded();
+      costState.spent += EDGE_CONFIG.PROVIDER_COSTS.ocr;
+      costState.ocrCount++;
     }
 
     function getCacheKey(prefix, ...parts) {
@@ -162,132 +185,277 @@ export default {
       map.set(key, { data, ts: Date.now() });
     }
 
+    // ============================================================
+    // Scene Change Detector (hash-based frame comparison)
+    // ============================================================
+    function computeFrameHash(frameB64) {
+      const data = frameB64 || '';
+      let hash = 0;
+      const step = Math.max(1, Math.floor(data.length / 256));
+      for (let i = 0; i < data.length; i += step) {
+        hash = ((hash << 5) - hash + data.charCodeAt(i)) | 0;
+      }
+      return hash.toString(36);
+    }
+
+    function hasSceneChanged(channelId, newHash) {
+      const state = channelStates.get(channelId);
+      if (!state || !state.lastFrameHash) return true;
+      return state.lastFrameHash !== newHash;
+    }
+
+    // ============================================================
+    // Vision Queue System (concurrency-limited)
+    // ============================================================
+    let visionQueueActive = 0;
+    const visionQueue = [];
+
+    async function enqueueVision(fn) {
+      if (visionQueueActive >= EDGE_CONFIG.VISION_MAX_CONCURRENT) {
+        if (visionQueue.length >= EDGE_CONFIG.VISION_QUEUE_MAX) return null;
+        return new Promise((resolve) => { visionQueue.push({ fn, resolve }); });
+      }
+      visionQueueActive++;
+      try { return await fn(); }
+      finally {
+        visionQueueActive--;
+        if (visionQueue.length > 0) {
+          const next = visionQueue.shift();
+          enqueueVision(next.fn).then(next.resolve);
+        }
+      }
+    }
+
+    // ============================================================
+    // Channel State Tracking
+    // ============================================================
+    function getChannelState(channelId) {
+      let state = channelStates.get(channelId);
+      if (!state) {
+        state = { lastDetection: null, lastFrameHash: null, detectionCount: 0, lastSource: null, lastUpdate: 0 };
+        channelStates.set(channelId, state);
+      }
+      return state;
+    }
+
+    function updateChannelState(channelId, detection, frameHash, source) {
+      const state = getChannelState(channelId);
+      state.lastDetection = detection;
+      state.lastFrameHash = frameHash;
+      state.detectionCount++;
+      state.lastSource = source;
+      state.lastUpdate = Date.now();
+    }
+
+    // ============================================================
+    // Content Type Inference
+    // ============================================================
     function inferContentType(text) {
       const t = (text || '').toLowerCase();
-      if (['movie','film','pelicula','cine','adrenalina','comedia','terror','horror','romance','drama','thriller','western','crime','classic','premiere','action'].some(k => t.includes(k))) return 'movie';
-      if (['series','episode','temporada','capitulo'].some(k => t.includes(k))) return 'series';
-      if (['sports','deporte','futbol','live','en vivo','directo'].some(k => t.includes(k))) return 'sports';
+      if (['movie','film','pelicula','cine','adrenalina','comedia','terror','horror','romance','drama','thriller','western','crime','classic','premiere','action','cinema','flick'].some(k => t.includes(k))) return 'movie';
+      if (['series','episode','temporada','capitulo','season'].some(k => t.includes(k))) return 'series';
+      if (['sports','deporte','futbol','soccer','basketball','nba','nfl','live','en vivo','directo','equidia'].some(k => t.includes(k))) return 'sports';
+      if (['music','musica','mtv','deluxe','rap','dance','hits','concert'].some(k => t.includes(k))) return 'music';
+      if (['kids','ninos','infantil','cartoon','nickelodeon','disney','baby','pokemon'].some(k => t.includes(k))) return 'kids';
+      if (['news','noticias','info','journal','bfm','euronews','france'].some(k => t.includes(k))) return 'news';
       return 'unknown';
     }
 
-    // TMDB Poster Engine
+    // ============================================================
+    // TMDB Poster Engine (Bearer token + API key support)
+    // ============================================================
     async function getPosterFromTMDB(title, contentType, year) {
       const cacheKey = getCacheKey('poster', title, year || '', contentType);
       const cached = getFromCache(posterCache, cacheKey, EDGE_CONFIG.CACHE_TTL.poster * 1000);
       if (cached) return cached;
 
       const tmdbKey = env.TMDB_API_KEY || '';
-      if (!tmdbKey) return null;
+      const tmdbToken = env.TMDB_ACCESS_TOKEN || '';
+      if (!tmdbKey && !tmdbToken) return null;
 
       const endpoint = contentType === 'movie' ? 'search/movie' : 'search/tv';
-      const params = new URLSearchParams({ api_key: tmdbKey, query: title, language: 'es' });
+      const params = new URLSearchParams({ query: title, language: 'es' });
       if (year) params.append(contentType === 'movie' ? 'year' : 'first_air_date_year', year);
 
       try {
+        const headers = { 'Content-Type': 'application/json' };
+        if (tmdbToken) { headers['Authorization'] = 'Bearer ' + tmdbToken; }
+        else { params.append('api_key', tmdbKey); }
+
         const resp = await fetch(`${EDGE_CONFIG.TMDB_API_URL}/${endpoint}?${params}`, {
-          signal: AbortSignal.timeout(8000)
+          headers, signal: AbortSignal.timeout(8000)
         });
         const data = await resp.json();
         if (data.results && data.results.length > 0) {
-          const posterPath = data.results[0].poster_path;
-          if (posterPath) {
-            const url = `https://image.tmdb.org/t/p/w500${posterPath}`;
-            setCache(posterCache, cacheKey, url);
-            return url;
-          }
+          const r = data.results[0];
+          const resultObj = {};
+          if (r.poster_path) resultObj.poster = `https://image.tmdb.org/t/p/w500${r.poster_path}`;
+          if (r.backdrop_path) resultObj.backdrop = `https://image.tmdb.org/t/p/w780${r.backdrop_path}`;
+          if (r.overview) resultObj.overview = r.overview;
+          if (r.vote_average) resultObj.rating = r.vote_average;
+          if (r.release_date || r.first_air_date) resultObj.year = (r.release_date || r.first_air_date).substring(0, 4);
+          if (r.genre_ids) resultObj.genre_ids = r.genre_ids;
+          if (r.id) resultObj.tmdb_id = r.id;
+          if (Object.keys(resultObj).length > 0) { setCache(posterCache, cacheKey, resultObj); return resultObj; }
         }
       } catch (e) { /* TMDB fail is non-critical */ }
       return null;
     }
 
-    // Vision-based detection using Mistral Pixtral
-    async function detectFromVision(frameB64, mistralKey) {
-      if (!mistralKey) return null;
-      try {
-        const resp = await fetch('https://api.mistral.ai/v1/chat/completions', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${mistralKey}` },
-          signal: AbortSignal.timeout(EDGE_CONFIG.VISION_TIMEOUT),
-          body: JSON.stringify({
-            model: 'pixtral-12b-2409',
-            messages: [{
-              role: 'user',
-              content: [
-                { type: 'text', text: 'Eres un identificador de contenido para TV IPTV. Analiza esta imagen y responde SOLO con JSON: {"title":"titulo exacto","type":"movie|series|sports|unknown","confidence":0.0-1.0}. Si no reconoces, confidence=0.' },
-                { type: 'image_url', image_url: `data:image/jpeg;base64,${frameB64}` }
-              ]
-            }],
-            temperature: 0.2,
-            max_tokens: 100
-          })
-        });
-        const data = await resp.json();
-        const content = data.choices?.[0]?.message?.content || '';
-        const jsonMatch = content.match(/\{[\s\S]*?\}/);
-        if (jsonMatch) {
-          const result = JSON.parse(jsonMatch[0]);
-          if (result.confidence >= EDGE_CONFIG.CONFIDENCE.vision_accept) {
-            return result;
-          }
-        }
-      } catch (e) { /* Vision fail is non-critical */ }
-      return null;
+    // ============================================================
+    // EPG Detection Pipeline
+    // ============================================================
+    async function detectFromEPG(channelId, channelName) {
+      const cacheKey = getCacheKey('epg', channelId);
+      const cached = getFromCache(epgCache, cacheKey, EDGE_CONFIG.CACHE_TTL.epg * 1000);
+      if (cached) return cached;
+      const type = inferContentType(channelName);
+      if (type === 'unknown') return null;
+      const result = { title: channelName, type, confidence: EDGE_CONFIG.CONFIDENCE.epg_accept, source: 'epg' };
+      setCache(epgCache, cacheKey, result, 500);
+      return result;
     }
 
-    // Metadata-based detection
+    // ============================================================
+    // Vision-based Detection using Mistral Pixtral
+    // ============================================================
+    async function detectFromVision(frameB64, mistralKey) {
+      if (!mistralKey || !frameB64) return null;
+      return enqueueVision(async () => {
+        try {
+          const resp = await fetch('https://api.mistral.ai/v1/chat/completions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${mistralKey}` },
+            signal: AbortSignal.timeout(EDGE_CONFIG.VISION_TIMEOUT),
+            body: JSON.stringify({
+              model: 'pixtral-12b-2409',
+              messages: [{
+                role: 'user',
+                content: [
+                  { type: 'text', text: `Eres un identificador de contenido para TV IPTV. Analiza esta imagen del canal y responde SOLO con JSON valido:\n{"title":"titulo exacto de la pelicula/serie/programa","type":"movie|series|sports|music|kids|news|unknown","confidence":0.0-1.0,"year":"ano si lo sabes","genre":["genero1","genero2"]}\n\nReglas:\n- Si reconoces una pelicula o serie especifica, pon el titulo real\n- Si ves un logo de canal, usa el nombre del programa que esta emitiendo\n- Si no estas seguro, confidence < 0.5\n- Si no reconoces nada, responde: {"title":"","type":"unknown","confidence":0}` },
+                  { type: 'image_url', image_url: `data:image/jpeg;base64,${frameB64}` }
+                ]
+              }],
+              temperature: 0.15,
+              max_tokens: 150
+            })
+          });
+          const data = await resp.json();
+          const content = data.choices?.[0]?.message?.content || '';
+          const jsonMatch = content.match(/\{[\s\S]*?\}/);
+          if (jsonMatch) {
+            const result = JSON.parse(jsonMatch[0]);
+            if (result.confidence >= EDGE_CONFIG.CONFIDENCE.vision_accept) {
+              result.source = 'vision';
+              return result;
+            }
+          }
+        } catch (e) { /* Vision fail is non-critical */ }
+        return null;
+      });
+    }
+
+    // ============================================================
+    // Metadata-based Detection
+    // ============================================================
     function detectFromMetadata(metadata) {
       const title = metadata?.title;
       if (!title || title.length < 2) return null;
       return {
-        title,
-        type: inferContentType(title + ' ' + (metadata.genre || []).join(' ')),
+        title, type: inferContentType(title + ' ' + (metadata.genre || []).join(' ')),
         confidence: EDGE_CONFIG.CONFIDENCE.metadata_accept,
-        genre: metadata.genre || [],
-        year: metadata.year || null
+        genre: metadata.genre || [], year: metadata.year || null, source: 'metadata'
       };
     }
 
-    // Full analysis pipeline
+    // ============================================================
+    // Full Analysis Pipeline: Metadata -> EPG -> Vision
+    // ============================================================
     async function analyzeChannel(channelId, category, frameB64, metadata) {
       const priority = EDGE_CONFIG.CHANNEL_PRIORITY[category] || EDGE_CONFIG.CHANNEL_PRIORITY.default;
       const now = Date.now();
 
-      // Rate limiting per channel
+      // Rate limiting per channel based on priority interval
       const cacheKey = getCacheKey('detect', channelId);
       const lastDetection = getFromCache(detectionCache, cacheKey, priority.interval * 1000);
-      if (lastDetection) return lastDetection;
+      if (lastDetection && lastDetection.confidence >= EDGE_CONFIG.CONFIDENCE.now_playing) return lastDetection;
 
       let detection = null;
+      let source = null;
+      let frameHash = null;
 
-      // 1. Metadata (fastest, free)
+      // Compute frame hash for scene detection
+      if (frameB64) frameHash = computeFrameHash(frameB64);
+
+      // 1. Metadata detection (fastest, free, highest confidence)
       if (!detection && metadata) {
         detection = detectFromMetadata(metadata);
+        if (detection) source = 'metadata';
       }
 
-      // 2. Vision (costly, but accurate for movies/sports)
-      if (!detection && frameB64 && priority.vision && canUseVision()) {
-        const mistralKey = env.MISTRAL_API || env.MISTRAL_API_KEY || '';
-        const visionResult = await detectFromVision(frameB64, mistralKey);
-        if (visionResult) {
-          recordVision();
-          detection = visionResult;
+      // 2. EPG detection (free, moderate confidence)
+      if (!detection || (detection && detection.confidence < EDGE_CONFIG.CONFIDENCE.epg_accept)) {
+        const channelName = metadata?.title || '';
+        if (channelName) {
+          const epgResult = await detectFromEPG(channelId, channelName);
+          if (epgResult && (!detection || epgResult.confidence > detection.confidence)) {
+            detection = epgResult; source = 'epg';
+          }
         }
       }
 
-      // 3. Fetch poster if we have a detection
-      if (detection && detection.confidence >= EDGE_CONFIG.CONFIDENCE.poster) {
-        const posterUrl = await getPosterFromTMDB(detection.title, detection.type || 'movie', detection.year);
-        if (posterUrl) detection.poster = posterUrl;
+      // 3. Vision detection (costly, accurate for movies/sports)
+      // Only if scene has changed and budget allows
+      if (frameB64 && priority.vision && canUseVision()) {
+        const sceneChanged = hasSceneChanged(channelId, frameHash);
+        if (sceneChanged || !detection || detection.confidence < EDGE_CONFIG.CONFIDENCE.now_playing) {
+          const mistralKey = env.MISTRAL_API || env.MISTRAL_API_KEY || '';
+          const visionResult = await detectFromVision(frameB64, mistralKey);
+          if (visionResult) {
+            recordVision();
+            if (!detection || visionResult.confidence > detection.confidence) {
+              detection = visionResult; source = 'vision';
+            }
+          }
+        }
       }
 
-      // Cache result
+      // 4. Fetch poster and enriched data from TMDB
+      if (detection && detection.confidence >= EDGE_CONFIG.CONFIDENCE.poster) {
+        const tmdbData = await getPosterFromTMDB(detection.title, detection.type || 'movie', detection.year);
+        if (tmdbData) {
+          if (tmdbData.poster) detection.poster = tmdbData.poster;
+          if (tmdbData.backdrop) detection.backdrop = tmdbData.backdrop;
+          if (tmdbData.overview) detection.overview = tmdbData.overview;
+          if (tmdbData.rating) detection.rating = tmdbData.rating;
+          if (tmdbData.year && !detection.year) detection.year = tmdbData.year;
+          if (tmdbData.tmdb_id) detection.tmdb_id = tmdbData.tmdb_id;
+        }
+      }
+
+      // Cache result and update channel state
       if (detection) {
         detection.timestamp = now;
         detection.channelId = channelId;
+        detection.source = source;
+        detection.sceneChanged = frameHash ? hasSceneChanged(channelId, frameHash) : false;
         setCache(detectionCache, cacheKey, detection);
+        updateChannelState(channelId, detection, frameHash, source);
       }
-
       return detection;
+    }
+
+    // ============================================================
+    // Batch Detection
+    // ============================================================
+    async function batchDetect(channelIds) {
+      const results = {};
+      for (const id of channelIds) {
+        const cacheKey = getCacheKey('detect', id);
+        const cached = getFromCache(detectionCache, cacheKey, EDGE_CONFIG.CACHE_TTL.detection * 1000);
+        if (cached) results[id] = cached;
+      }
+      return results;
     }
 
     // ============================================================
@@ -297,35 +465,34 @@ export default {
       try {
         const body = await request.json();
         const { channelId, category, frame, metadata } = body;
-        if (!channelId) {
-          return new Response(JSON.stringify({ error: 'channelId required' }), {
-            status: 400, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
-          });
-        }
+        if (!channelId) return new Response(JSON.stringify({ error: 'channelId required' }), { status: 400, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
         const result = await analyzeChannel(channelId, category || 'default', frame, metadata);
-        return new Response(JSON.stringify(result), {
-          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-cache' }
-        });
+        return new Response(JSON.stringify(result), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-cache' } });
       } catch (e) {
-        return new Response(JSON.stringify({ error: e.message }), {
-          status: 500, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
-        });
+        return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
       }
     }
 
     // API: Get cached detection for a channel
     if (url.pathname === '/api/now-playing' && request.method === 'GET') {
       const channelId = url.searchParams.get('channelId');
-      if (!channelId) {
-        return new Response(JSON.stringify({ error: 'channelId required' }), {
-          status: 400, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
-        });
-      }
+      if (!channelId) return new Response(JSON.stringify({ error: 'channelId required' }), { status: 400, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
       const cacheKey = getCacheKey('detect', channelId);
       const result = getFromCache(detectionCache, cacheKey, EDGE_CONFIG.CACHE_TTL.detection * 1000);
-      return new Response(JSON.stringify(result), {
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-cache' }
-      });
+      return new Response(JSON.stringify(result), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-cache' } });
+    }
+
+    // API: Batch detection for multiple channels
+    if (url.pathname === '/api/batch-detect' && request.method === 'POST') {
+      try {
+        const body = await request.json();
+        const { channelIds } = body;
+        if (!channelIds || !Array.isArray(channelIds)) return new Response(JSON.stringify({ error: 'channelIds array required' }), { status: 400, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+        const results = await batchDetect(channelIds);
+        return new Response(JSON.stringify(results), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-cache' } });
+      } catch (e) {
+        return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+      }
     }
 
     // API: TMDB Poster lookup
@@ -333,27 +500,44 @@ export default {
       const title = url.searchParams.get('title');
       const type = url.searchParams.get('type') || 'movie';
       const year = url.searchParams.get('year') || null;
-      if (!title) {
-        return new Response(JSON.stringify({ error: 'title required' }), {
-          status: 400, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
-        });
-      }
+      if (!title) return new Response(JSON.stringify({ error: 'title required' }), { status: 400, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
       const poster = await getPosterFromTMDB(title, type, year);
-      return new Response(JSON.stringify({ title, poster }), {
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'public, max-age=86400' }
-      });
+      return new Response(JSON.stringify({ title, ...poster }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'public, max-age=86400' } });
     }
 
-    // API: Cost status
+    // API: Cost status (enhanced)
     if (url.pathname === '/api/cost-status' && request.method === 'GET') {
       resetCostIfNeeded();
       return new Response(JSON.stringify({
-        remaining: Math.max(0, EDGE_CONFIG.DAILY_BUDGET - costState.spent).toFixed(2),
-        visionCalls: costState.visionCount,
-        budget: EDGE_CONFIG.DAILY_BUDGET
-      }), {
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
-      });
+        remaining: Math.max(0, EDGE_CONFIG.DAILY_BUDGET - costState.spent).toFixed(4),
+        spent: costState.spent.toFixed(4), visionCalls: costState.visionCount, ocrCalls: costState.ocrCount,
+        budget: EDGE_CONFIG.DAILY_BUDGET, visionQueueActive, visionQueuePending: visionQueue.length,
+        activeChannels: channelStates.size
+      }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+    }
+
+    // API: Channel state
+    if (url.pathname === '/api/channel-state' && request.method === 'GET') {
+      const channelId = url.searchParams.get('channelId');
+      if (!channelId) return new Response(JSON.stringify({ error: 'channelId required' }), { status: 400, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+      const state = channelStates.get(channelId) || null;
+      return new Response(JSON.stringify(state), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+    }
+
+    // API: Detection stats
+    if (url.pathname === '/api/detection-stats' && request.method === 'GET') {
+      resetCostIfNeeded();
+      const sources = { metadata: 0, epg: 0, vision: 0, unknown: 0 };
+      for (const [, entry] of detectionCache) {
+        if (entry.data?.source) sources[entry.data.source] = (sources[entry.data.source] || 0) + 1;
+        else sources.unknown++;
+      }
+      return new Response(JSON.stringify({
+        totalDetections: detectionCache.size, totalPosters: posterCache.size,
+        totalEPG: epgCache.size, totalChannelStates: channelStates.size, sources,
+        budget: { spent: costState.spent.toFixed(4), remaining: Math.max(0, EDGE_CONFIG.DAILY_BUDGET - costState.spent).toFixed(4), visionCalls: costState.visionCount, ocrCalls: costState.ocrCount },
+        visionQueue: { active: visionQueueActive, pending: visionQueue.length }
+      }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
     }
 
     // Mistral AI proxy
@@ -361,31 +545,16 @@ export default {
       try {
         const body = await request.json();
         const apiKey = env.MISTRAL_API || env.MISTRAL_API_KEY || '';
-        if (!apiKey) {
-          return new Response(
-            JSON.stringify({ error: 'MISTRAL_API not configured. Add it in Cloudflare Dashboard > Workers > Settings > Variables.' }),
-            { status: 500, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
-          );
-        }
+        if (!apiKey) return new Response(JSON.stringify({ error: 'MISTRAL_API not configured. Add it in Cloudflare Dashboard > Workers > Settings > Variables.' }), { status: 500, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
         const resp = await fetch('https://api.mistral.ai/v1/chat/completions', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
-          body: JSON.stringify({
-            model: body.model || 'mistral-small',
-            messages: body.messages || [],
-            max_tokens: body.max_tokens || 200
-          })
+          body: JSON.stringify({ model: body.model || 'mistral-small', messages: body.messages || [], max_tokens: body.max_tokens || 200 })
         });
         const data = await resp.json();
-        return new Response(JSON.stringify(data), {
-          status: resp.status,
-          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
-        });
+        return new Response(JSON.stringify(data), { status: resp.status, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
       } catch (e) {
-        return new Response(JSON.stringify({ error: e.message }), {
-          status: 500,
-          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
-        });
+        return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
       }
     }
 
@@ -517,6 +686,13 @@ header nav a.active::after{content:'';position:absolute;bottom:-2px;left:0;width
 .ch-card .ch-now-playing .np-title{font-size:10px;color:var(--gray);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
 .ch-card .ch-now-playing .np-type{font-size:8px;padding:1px 5px;border-radius:3px;background:rgba(255,255,255,0.06);color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;flex-shrink:0}
 .ch-card .ch-now-playing .np-poster{width:20px;height:28px;border-radius:2px;object-fit:cover;flex-shrink:0}
+.ch-card .ch-now-playing .np-source{flex-shrink:0;display:flex;align-items:center;gap:2px;font-size:8px;color:var(--muted);margin-left:auto;padding:1px 4px;border-radius:2px;background:rgba(255,255,255,0.04)}
+.ch-card .ch-now-playing .np-source .fa-tag{color:#4caf50}.ch-card .ch-now-playing .np-source .fa-calendar{color:#2196f3}.ch-card .ch-now-playing .np-source .fa-eye{color:#ff9800}
+.player-now-playing .pnp-overview{font-size:10px;color:var(--muted);margin-top:4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.4}
+.player-now-playing .pnp-year{font-size:10px;color:var(--gray);padding:1px 5px;border-radius:3px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08)}
+.player-now-playing .pnp-rating{font-size:10px;color:#ffc107;display:flex;align-items:center;gap:3px}
+.player-now-playing .pnp-rating i{font-size:8px}
+.player-now-playing .pnp-backdrop{position:absolute;inset:0;background-size:cover;background-position:center;filter:blur(30px) brightness(0.15);z-index:-1;opacity:0.6}
 .player-now-playing{display:flex;align-items:center;gap:12px;padding:8px 16px;background:var(--elevated);border-top:1px solid rgba(255,255,255,0.06)}
 .player-now-playing .pnp-poster{width:40px;height:56px;border-radius:4px;object-fit:cover;flex-shrink:0;border:1px solid rgba(255,255,255,0.1)}
 .player-now-playing .pnp-info{flex:1;min-width:0}
@@ -662,9 +838,9 @@ footer .f-stats .stat strong{color:var(--white);font-family:var(--font-display)}
 <div id="search-box"><input type="text" id="search-input" placeholder="Buscar canales..."></div>
 <section class="hero" id="hero-section"><div id="hero-slides"></div><div class="hero-arrows"><button id="hero-prev"><i class="fas fa-chevron-left"></i></button><button id="hero-next"><i class="fas fa-chevron-right"></i></button><div class="hero-dots" id="hero-dots"></div></section>
 <div class="main-layout"><main class="main-content"><section id="continue-section" style="display:none"><h2 class="section-title"><span class="st-bar"></span>Continue Watching<span class="st-badge" id="cw-count">0</span></h2><div class="cw-scroll" id="cw-scroll"></div></section><section id="channels-section"><h2 class="section-title"><span class="st-bar"></span>Canales en Vivo<span class="st-count" id="ch-count"></span></h2><div class="cat-filter" id="cat-filter"></div><div class="channels-grid" id="channels-grid"></div></section><section id="upcoming-section" style="margin-top:40px"><h2 class="section-title"><span class="st-bar"></span>Coming Up</h2><div class="upcoming-scroll" id="upcoming-scroll"></div></section></main><aside class="sidebar"><div class="sidebar-section"><div class="sidebar-toggle" id="on-air-toggle"><h3><i class="fas fa-broadcast-tower"></i>En Vivo Ahora</h3><i class="fas fa-chevron-down chevron"></i></div><div class="sidebar-body" id="on-air-body"></div></div><div class="sidebar-section"><div class="sidebar-toggle" id="trending-toggle"><h3><i class="fas fa-fire"></i>Tendencias</h3><i class="fas fa-chevron-down chevron"></i></div><div class="sidebar-body" id="trending-body"></div></div><div class="sidebar-section"><div class="sidebar-toggle" id="mistral-toggle"><h3><i class="fas fa-robot"></i>Asistente IA</h3><i class="fas fa-chevron-down chevron"></i></div><div class="sidebar-body" id="mistral-body"><div class="mp-chat"><div class="mp-msg" id="mistral-msg">Preguntame sobre canales!</div><div class="mp-input-wrap"><input class="mp-input" id="mistral-input" placeholder="Pregunta sobre canales..."><button class="mp-send" id="mistral-send"><i class="fas fa-paper-plane"></i></button></div></div></div></div></aside></div>
-<div id="player-modal"><div class="player-wrap"><button class="player-close" id="player-close"><i class="fas fa-times"></i></button><video id="hls-video" muted playsinline></video><div class="player-spinner" id="player-spinner"><div class="spinner-ring"></div></div><div class="buffering-overlay" id="buffering-overlay"><div class="buffer-pulse"></div></div><div class="offline-overlay" id="offline-overlay"><i class="fas fa-signal off-icon"></i><div class="off-text">CANAL OFFLINE</div><div class="off-hint">Este canal puede estar bloqueado. Prueba otro o usa VPN.</div><button class="btn-retry" id="btn-retry"><i class="fas fa-redo"></i> Reintentar</button><button class="btn-switch" id="btn-switch"><i class="fas fa-exchange-alt"></i> Siguiente Canal</button></div><div class="player-now-playing" id="player-now-playing" style="display:none"><img class="pnp-poster" id="pnp-poster" src="" alt=""><div class="pnp-info"><div class="pnp-title" id="pnp-title">-</div><div class="pnp-meta"><span class="pnp-type" id="pnp-type">-</span><span class="pnp-confidence" id="pnp-confidence"></span></div></div></div><div class="player-bar"><button id="play-pause"><i class="fas fa-play"></i></button><button id="vol-btn"><i class="fas fa-volume-mute"></i></button><input type="range" id="vol-slider" min="0" max="100" value="0" class="vol-slider"><span class="p-title" id="player-title">-</span><span class="p-quality" id="quality-indicator">HD</span><span class="p-status connecting" id="player-status">CONNECTING</span><button id="detect-btn" title="Detect content"><i class="fas fa-magic"></i></button><button id="audio-btn"><i class="fas fa-headphones"></i></button><button id="fullscreen-btn"><i class="fas fa-expand"></i></button></div></div></div>
+<div id="player-modal"><div class="player-wrap"><button class="player-close" id="player-close"><i class="fas fa-times"></i></button><video id="hls-video" muted playsinline></video><div class="player-spinner" id="player-spinner"><div class="spinner-ring"></div></div><div class="buffering-overlay" id="buffering-overlay"><div class="buffer-pulse"></div></div><div class="offline-overlay" id="offline-overlay"><i class="fas fa-signal off-icon"></i><div class="off-text">CANAL OFFLINE</div><div class="off-hint">Este canal puede estar bloqueado. Prueba otro o usa VPN.</div><button class="btn-retry" id="btn-retry"><i class="fas fa-redo"></i> Reintentar</button><button class="btn-switch" id="btn-switch"><i class="fas fa-exchange-alt"></i> Siguiente Canal</button></div><div class="player-now-playing" id="player-now-playing" style="display:none;position:relative;overflow:hidden"><div class="pnp-backdrop" id="pnp-backdrop"></div><img class="pnp-poster" id="pnp-poster" src="" alt=""><div class="pnp-info"><div class="pnp-title" id="pnp-title">-</div><div class="pnp-meta"><span class="pnp-type" id="pnp-type">-</span><span class="pnp-year" id="pnp-year"></span><span class="pnp-rating" id="pnp-rating"></span><span class="pnp-confidence" id="pnp-confidence"></span></div><div class="pnp-overview" id="pnp-overview"></div></div></div><div class="player-bar"><button id="play-pause"><i class="fas fa-play"></i></button><button id="vol-btn"><i class="fas fa-volume-mute"></i></button><input type="range" id="vol-slider" min="0" max="100" value="0" class="vol-slider"><span class="p-title" id="player-title">-</span><span class="p-quality" id="quality-indicator">HD</span><span class="p-status connecting" id="player-status">CONNECTING</span><button id="detect-btn" title="Detect content"><i class="fas fa-magic"></i></button><button id="audio-btn"><i class="fas fa-headphones"></i></button><button id="fullscreen-btn"><i class="fas fa-expand"></i></button></div></div></div>
 <div class="toast" id="toast"></div>
-<footer><div class="f-brand">EDGE <span>v7.0</span> &mdash; IPTV 100% Gratis</div><div class="f-stats"><div class="stat"><strong id="stat-ch">211</strong> canales</div><div class="stat"><strong id="stat-hd">211</strong> HD</div><div class="stat"><strong>5</strong> categorias</div></div></footer>
+<footer><div class="f-brand">EDGE <span>v8.0</span> &mdash; IPTV 100% Gratis</div><div class="f-stats"><div class="stat"><strong id="stat-ch">211</strong> canales</div><div class="stat"><strong id="stat-hd">211</strong> HD</div><div class="stat"><strong>5</strong> categorias</div><div class="stat"><strong id="stat-detect">0</strong> detectados</div></div></footer>
 <script>
 (function(){function k(){var s=document.getElementById('splash');if(s)s.classList.add('hide');}setTimeout(k,2500);setTimeout(k,3500);setTimeout(k,5000);document.addEventListener('DOMContentLoaded',function(){setTimeout(k,800);});window.addEventListener('load',function(){setTimeout(k,300);});window.onerror=function(){k();return true;};})();
 <\/script>
@@ -1324,7 +1500,8 @@ try{initApp();}catch(e){console.error('BOOT:',e);killSplash();}
 })();
 
 // ============================================================
-// EDGE MVP ENGINE - Frontend Detection System
+// EDGE MVP ENGINE v2 - Frontend Detection System
+// Scene Change Detection + Priority Intervals + Batch Detect + Source Attribution
 // ============================================================
 (function(){
 'use strict';
@@ -1332,6 +1509,24 @@ try{initApp();}catch(e){console.error('BOOT:',e);killSplash();}
 var nowPlayingData={};
 var detectInterval=null;
 var currentChannel=null;
+var lastFrameHash=null;
+var sceneChangeCount=0;
+var detectionStats={total:0,bySource:{metadata:0,epg:0,vision:0}};
+
+// Channel priority intervals (seconds) - matches backend EDGE_CONFIG
+var PRIORITY_INTERVALS={
+  sports:15,movies:30,series:45,news:120,music:90,kids:60,french:60,default:60
+};
+
+function computeFrameHash(frameB64){
+  if(!frameB64)return null;
+  var hash=0;
+  var step=Math.max(1,Math.floor(frameB64.length/256));
+  for(var i=0;i<frameB64.length;i+=step){
+    hash=((hash<<5)-hash+frameB64.charCodeAt(i))|0;
+  }
+  return hash.toString(36);
+}
 
 function captureFrame(video,quality){
   if(!video||!video.videoWidth)return null;
@@ -1346,10 +1541,23 @@ function captureFrame(video,quality){
   }catch(e){return null;}
 }
 
-async function detectChannel(ch){
+async function detectChannel(ch,force){
   if(!ch)return;
   var video=document.getElementById('hls-video');
   var frame=captureFrame(video,0.4);
+  var frameHash=computeFrameHash(frame);
+
+  // Scene change detection - skip if scene hasn't changed (unless forced)
+  if(!force&&lastFrameHash&&frameHash===lastFrameHash){
+    return nowPlayingData[ch.id]||null;
+  }
+
+  // Update scene tracking
+  if(frameHash&&frameHash!==lastFrameHash){
+    sceneChangeCount++;
+    lastFrameHash=frameHash;
+  }
+
   var body={channelId:String(ch.id),category:ch.c||'default'};
   if(frame)body.frame=frame;
   body.metadata={title:ch.n,genre:[catLabel(ch.c)]};
@@ -1363,6 +1571,8 @@ async function detectChannel(ch){
     var data=await resp.json();
     if(data&&data.title){
       nowPlayingData[ch.id]=data;
+      detectionStats.total++;
+      if(data.source)detectionStats.bySource[data.source]=(detectionStats.bySource[data.source]||0)+1;
       updateNowPlayingUI(ch.id,data);
     }
     return data;
@@ -1382,12 +1592,13 @@ function updateNowPlayingUI(channelId,data){
     if(data.poster)html+='<img class="np-poster" src="'+data.poster+'" alt="" loading="lazy">';
     html+='<span class="np-title">'+esc(data.title)+'</span>';
     if(data.type&&data.type!=='unknown')html+='<span class="np-type">'+data.type+'</span>';
+    if(data.source)html+='<span class="np-source" title="Fuente: '+getSourceLabel(data.source)+'">'+getSourceIcon(data.source)+'</span>';
     np.innerHTML=html;
-    var body=card.querySelector('.ch-body');
-    if(body)body.appendChild(np);
+    var bodyEl=card.querySelector('.ch-body');
+    if(bodyEl)bodyEl.appendChild(np);
   }
 
-  // Update player now-playing
+  // Update player now-playing with enriched data
   var pnp=document.getElementById('player-now-playing');
   if(pnp&&currentChannel&&currentChannel.id==channelId){
     pnp.style.display='flex';
@@ -1395,14 +1606,45 @@ function updateNowPlayingUI(channelId,data){
     var title=document.getElementById('pnp-title');
     var type=document.getElementById('pnp-type');
     var conf=document.getElementById('pnp-confidence');
+    var yearEl=document.getElementById('pnp-year');
+    var ratingEl=document.getElementById('pnp-rating');
+    var overviewEl=document.getElementById('pnp-overview');
+    var backdropEl=document.getElementById('pnp-backdrop');
+
     if(poster){
       if(data.poster){poster.src=data.poster;poster.style.display='block';}
       else{poster.style.display='none';}
     }
     if(title)title.textContent=data.title||'-';
     if(type)type.textContent=(data.type||'unknown').toUpperCase();
-    if(conf)conf.textContent=data.confidence?Math.round(data.confidence*100)+'% match':'';
+    if(conf){
+      var parts=[Math.round(data.confidence*100)+'%'];
+      if(data.source)parts.push(getSourceLabel(data.source));
+      conf.textContent=parts.join(' · ');
+    }
+    if(yearEl)yearEl.textContent=data.year||'';
+    if(ratingEl){
+      if(data.rating){ratingEl.innerHTML='<i class="fas fa-star"></i> '+data.rating.toFixed(1);ratingEl.style.display='flex';}
+      else{ratingEl.style.display='none';}
+    }
+    if(overviewEl)overviewEl.textContent=data.overview||'';
+    if(backdropEl){
+      if(data.backdrop){backdropEl.style.backgroundImage='url('+data.backdrop+')';backdropEl.style.display='block';}
+      else{backdropEl.style.display='none';}
+    }
   }
+}
+
+function getSourceIcon(source){
+  var icons={metadata:'<i class="fas fa-tag" style="font-size:8px;color:#4caf50"></i>',
+    epg:'<i class="fas fa-calendar" style="font-size:8px;color:#2196f3"></i>',
+    vision:'<i class="fas fa-eye" style="font-size:8px;color:#ff9800"></i>'};
+  return icons[source]||'';
+}
+
+function getSourceLabel(source){
+  var labels={metadata:'Metadata',epg:'EPG',vision:'AI Vision'};
+  return labels[source]||source;
 }
 
 async function autoDetect(){
@@ -1410,29 +1652,41 @@ async function autoDetect(){
   await detectChannel(currentChannel);
 }
 
+function getDetectInterval(ch){
+  var cat=(ch.c||'default').toLowerCase();
+  return (PRIORITY_INTERVALS[cat]||60)*1000;
+}
+
 // Hook into player open
 var origOpenPlayer=window.openPlayer;
 window.openPlayer=function(ch){
   currentChannel=ch;
+  lastFrameHash=null;
+  sceneChangeCount=0;
   if(origOpenPlayer)origOpenPlayer(ch);
 
   // Clear previous
   var pnp=document.getElementById('player-now-playing');
   if(pnp)pnp.style.display='none';
+  var backdropEl=document.getElementById('pnp-backdrop');
+  if(backdropEl)backdropEl.style.display='none';
 
-  // Start auto-detection after stream loads
+  // Start auto-detection with channel-specific interval
   if(detectInterval)clearInterval(detectInterval);
-  setTimeout(function(){autoDetect();},8000);
-  detectInterval=setInterval(function(){autoDetect();},30000);
+  setTimeout(function(){autoDetect();},6000);
+  detectInterval=setInterval(function(){autoDetect();},getDetectInterval(ch));
 };
 
 // Hook into player close
 var origClosePlayer=window.closePlayer;
 window.closePlayer=function(){
   currentChannel=null;
+  lastFrameHash=null;
   if(detectInterval){clearInterval(detectInterval);detectInterval=null;}
   var pnp=document.getElementById('player-now-playing');
   if(pnp)pnp.style.display='none';
+  var backdropEl=document.getElementById('pnp-backdrop');
+  if(backdropEl)backdropEl.style.display='none';
   if(origClosePlayer)origClosePlayer();
 };
 
@@ -1442,8 +1696,8 @@ document.addEventListener('DOMContentLoaded',function(){
   if(db)db.addEventListener('click',function(){
     if(currentChannel){
       showToast('Detectando contenido...');
-      detectChannel(currentChannel).then(function(d){
-        if(d&&d.title)showToast('Detectado: '+d.title);
+      detectChannel(currentChannel,true).then(function(d){
+        if(d&&d.title)showToast('Detectado: '+d.title+(d.source?' ('+getSourceLabel(d.source)+')':''));
         else showToast('No se pudo detectar el contenido');
       });
     }
@@ -1451,6 +1705,7 @@ document.addEventListener('DOMContentLoaded',function(){
 });
 
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
 function catLabel(c){var cats=[{id:'movies',label:'Peliculas'},{id:'francais',label:'Francais'},{id:'kids',label:'Ninos'},{id:'music',label:'Musica'},{id:'news',label:'Noticias'}];for(var i=0;i<cats.length;i++){if(cats[i].id===c)return cats[i].label;}return c;}
 
 function showToast(msg){
@@ -1470,7 +1725,6 @@ var npObserver=new IntersectionObserver(function(entries){
       if(id&&!nowPlayingData[id]){
         var ch=CHANNELS.find(function(x){return x.id===id;});
         if(ch){
-          // Lightweight metadata-only detection for grid
           fetch('/api/now-playing?channelId='+id).then(function(r){return r.json();}).then(function(d){
             if(d&&d.title){
               nowPlayingData[id]=d;
@@ -1483,6 +1737,37 @@ var npObserver=new IntersectionObserver(function(entries){
   });
 },{rootMargin:'200px'});
 
+// Batch detection for visible cards (first load)
+var batchTimer=null;
+function scheduleBatchDetect(){
+  if(batchTimer)clearTimeout(batchTimer);
+  batchTimer=setTimeout(function(){
+    var visible=[];
+    var cards=document.querySelectorAll('.ch-card[data-id]');
+    for(var i=0;i<Math.min(cards.length,30);i++){
+      var id=parseInt(cards[i].getAttribute('data-id'));
+      if(id&&!nowPlayingData[id])visible.push(String(id));
+    }
+    if(visible.length>0){
+      fetch('/api/batch-detect',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({channelIds:visible})
+      }).then(function(r){return r.json();}).then(function(results){
+        if(results){
+          Object.keys(results).forEach(function(id){
+            var d=results[id];
+            if(d&&d.title){
+              nowPlayingData[id]=d;
+              updateNowPlayingUI(parseInt(id),d);
+            }
+          });
+        }
+      }).catch(function(){});
+    }
+  },2000);
+}
+
 // Observe cards after render
 var origRenderGrid=window.renderGrid;
 window.renderGrid=function(){
@@ -1490,7 +1775,19 @@ window.renderGrid=function(){
   setTimeout(function(){
     var cards=document.querySelectorAll('.ch-card[data-id]');
     for(var i=0;i<cards.length;i++){npObserver.observe(cards[i]);}
+    scheduleBatchDetect();
   },200);
+};
+
+// Expose detection stats globally
+window.getDetectionStats=function(){
+  return{
+    nowPlaying:Object.keys(nowPlayingData).length,
+    sceneChanges:sceneChangeCount,
+    detections:detectionStats.total,
+    bySource:detectionStats.bySource,
+    currentChannel:currentChannel?currentChannel.n:null
+  };
 };
 
 })();
