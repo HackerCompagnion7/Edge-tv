@@ -2,12 +2,72 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
-    // CORS preflight
-    if (url.pathname === '/api/ai' && request.method === 'OPTIONS') {
+    // Stream Proxy - handles CORS for HLS streams
+    if (url.pathname === '/proxy') {
+      const targetUrl = url.searchParams.get('url');
+      if (!targetUrl) {
+        return new Response('Missing url parameter', { status: 400, headers: { 'Access-Control-Allow-Origin': '*' } });
+      }
+      try {
+        const targetResp = await fetch(targetUrl, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': '*/*',
+            'Origin': new URL(targetUrl).origin
+          }
+        });
+        const contentType = targetResp.headers.get('Content-Type') || '';
+        let body = await targetResp.text();
+
+        // Rewrite .m3u8 playlists to route segments through our proxy
+        if (contentType.includes('mpegurl') || targetUrl.includes('.m3u8')) {
+          const base = targetUrl.substring(0, targetUrl.lastIndexOf('/') + 1);
+          const lines = body.split('\n');
+          const rewritten = lines.map(line => {
+            const trimmed = line.trim();
+            if (!trimmed || trimmed.startsWith('#')) {
+              // Rewrite URI attributes inside #EXT-X-KEY, #EXT-X-MEDIA etc.
+              if (trimmed.startsWith('#EXT-X-KEY:') || trimmed.startsWith('#EXT-X-MEDIA:')) {
+                return line.replace(/URI="([^"]+)"/g, (match, uri) => {
+                  if (uri.startsWith('http')) return 'URI="' + url.origin + '/proxy?url=' + encodeURIComponent(uri) + '"';
+                  return 'URI="' + url.origin + '/proxy?url=' + encodeURIComponent(base + uri) + '"';
+                });
+              }
+              return line;
+            }
+            // Segment URL - rewrite to proxy
+            if (trimmed.startsWith('http')) {
+              return url.origin + '/proxy?url=' + encodeURIComponent(trimmed);
+            }
+            return url.origin + '/proxy?url=' + encodeURIComponent(base + trimmed);
+          });
+          body = rewritten.join('\n');
+        }
+
+        return new Response(body, {
+          status: targetResp.status,
+          headers: {
+            'Content-Type': contentType || 'application/vnd.apple.mpegurl',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET,OPTIONS',
+            'Access-Control-Allow-Headers': '*',
+            'Cache-Control': 'no-cache'
+          }
+        });
+      } catch (e) {
+        return new Response('Proxy error: ' + e.message, {
+          status: 502,
+          headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'text/plain' }
+        });
+      }
+    }
+
+    // CORS preflight for all API routes
+    if ((url.pathname === '/api/ai' || url.pathname === '/proxy') && request.method === 'OPTIONS') {
       return new Response(null, {
         headers: {
           'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'POST,OPTIONS',
+          'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
           'Access-Control-Allow-Headers': 'Content-Type'
         }
       });
@@ -553,20 +613,47 @@ function renderUpcoming(){
 
 function openPlayer(ch){curCh=ch;retryCount=0;if(playerRetryTimer){clearTimeout(playerRetryTimer);playerRetryTimer=null;}var m=document.getElementById('player-modal'),v=document.getElementById('hls-video'),t=document.getElementById('player-title'),st=document.getElementById('player-status');if(t)t.textContent=ch.n;if(st){st.className='p-status connecting';st.textContent='CONNECTING';}if(m)m.classList.add('open');hideOffline();showSpinner();startStream(ch.s);document.body.style.overflow='hidden';var ms=document.getElementById('mistral-msg');if(ms)ms.textContent='Now playing: '+ch.n+'. Ask me for similar channels!';}
 
-function startStream(url){
+function startStream(origUrl){
   if(hlsInst){hlsInst.destroy();hlsInst=null;}
   var v=document.getElementById('hls-video');if(!v)return;v.removeAttribute('src');v.load();hideOffline();showSpinner();
+  // Route through CORS proxy
+  var proxyUrl=location.origin+'/proxy?url='+encodeURIComponent(origUrl);
   if(typeof Hls!=='undefined'&&Hls.isSupported()){
-    hlsInst=new Hls({enableWorker:true,lowLatencyMode:true,maxBufferLength:30,maxMaxBufferLength:60});
-    hlsInst.loadSource(url);hlsInst.attachMedia(v);
+    hlsInst=new Hls({
+      enableWorker:true,
+      lowLatencyMode:false,
+      maxBufferLength:30,
+      maxMaxBufferLength:60,
+      maxBufferSize:60*1024*1024,
+      startFragPrefetch:true,
+      progressive:true,
+      xhrSetup:function(xhr,url){
+        // Route ALL HLS.js requests through our CORS proxy
+        if(url&&!url.startsWith(location.origin)){
+          xhr.open('GET',location.origin+'/proxy?url='+encodeURIComponent(url),true);
+        }
+      }
+    });
+    hlsInst.loadSource(proxyUrl);hlsInst.attachMedia(v);
     hlsInst.on(Hls.Events.MANIFEST_PARSED,function(){v.play().catch(function(){});hideSpinner();setStatus('live');updateQuality();});
-    hlsInst.on(Hls.Events.ERROR,function(ev,d){if(d.fatal){if(d.type===Hls.ErrorTypes.MEDIA_ERROR)hlsInst.recoverMediaError();else fatalErr(url);}});
+    hlsInst.on(Hls.Events.ERROR,function(ev,d){
+      if(d.fatal){
+        if(d.type===Hls.ErrorTypes.MEDIA_ERROR){
+          hlsInst.recoverMediaError();
+        }else if(d.type===Hls.ErrorTypes.NETWORK_ERROR){
+          // Network errors get more retries before giving up
+          if(retryCount<5){retryCount++;showToast('Reconnecting... ('+retryCount+')');hlsInst.startLoad();}else fatalErr(origUrl);
+        }else{
+          fatalErr(origUrl);
+        }
+      }
+    });
   }else if(v.canPlayType('application/vnd.apple.mpegurl')){
-    v.src=url;v.addEventListener('loadedmetadata',function om(){v.play().catch(function(){});hideSpinner();setStatus('live');updateQuality();v.removeEventListener('loadedmetadata',om);});
+    v.src=proxyUrl;v.addEventListener('loadedmetadata',function om(){v.play().catch(function(){});hideSpinner();setStatus('live');updateQuality();v.removeEventListener('loadedmetadata',om);});
   }
-  v.onerror=function(){fatalErr(url);};v.onwaiting=function(){showBuffer();};v.onplaying=function(){hideBuffer();hideSpinner();setStatus('live');};v.onloadedmetadata=function(){updateQuality();};
+  v.onerror=function(){fatalErr(origUrl);};v.onwaiting=function(){showBuffer();};v.onplaying=function(){hideBuffer();hideSpinner();setStatus('live');};v.onloadedmetadata=function(){updateQuality();};
 }
-function fatalErr(url){if(retryCount<MAX_RETRIES){retryCount++;var d=Math.pow(2,retryCount)*1000;showToast('Retrying in '+(d/1000)+'s');if(playerRetryTimer)clearTimeout(playerRetryTimer);playerRetryTimer=setTimeout(function(){startStream(url);},d);}else tryNext();}
+function fatalErr(url){if(retryCount<MAX_RETRIES){retryCount++;var d=Math.pow(2,retryCount)*1500;showToast('Reintentando en '+(d/1000)+'s...');if(playerRetryTimer)clearTimeout(playerRetryTimer);playerRetryTimer=setTimeout(function(){startStream(url);},d);}else tryNext();}
 function tryNext(){if(!curCh){showOffline();return;}var same=CHANNELS.filter(function(ch){return ch.c===curCh.c&&ch.id!==curCh.id;});if(!same.length){showOffline();return;}var nx=same[0];showToast('Switching to: '+nx.n);retryCount=0;curCh=nx;var t=document.getElementById('player-title');if(t)t.textContent=nx.n;setStatus('connecting');hideOffline();showSpinner();startStream(nx.s);}
 function closePlayer(){var m=document.getElementById('player-modal'),v=document.getElementById('hls-video');if(hlsInst){hlsInst.destroy();hlsInst=null;}if(v){v.pause();v.removeAttribute('src');v.load();}if(m)m.classList.remove('open');if(playerRetryTimer){clearTimeout(playerRetryTimer);playerRetryTimer=null;}document.body.style.overflow='';hideOffline();hideSpinner();hideBuffer();}
 function setStatus(s){var e=document.getElementById('player-status');if(!e)return;e.className='p-status '+s;e.textContent=s==='live'?'LIVE':s==='connecting'?'CONNECTING':'OFFLINE';}
