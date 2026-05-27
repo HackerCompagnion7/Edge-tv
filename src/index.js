@@ -1975,7 +1975,40 @@ function askMistral(q,ctx){
   var category=curCh?curCh.c:'default';
   var channelId=curCh?curCh.id:null;
 
-  // Send to Vision Chat endpoint (with frame if available)
+  // Try Python Vision Engine first (has FFmpeg, PaddleOCR, OpenCLIP)
+  if(ENGINE_AVAILABLE||!ENGINE_AVAILABLE){
+    try{
+      var engineBody={question:q,channelName:channelName,category:category,channelId:channelId};
+      if(frame)engineBody.frame=frame;
+      var engineResp=await fetch(ENGINE_URL+'/api/vision-chat',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify(engineBody),
+        signal:AbortSignal.timeout(15000)
+      });
+      if(engineResp.ok){
+        var engineData=await engineResp.json();
+        if(engineData&&engineData.response){
+          ENGINE_AVAILABLE=true;
+          var html='';
+          if(engineData.source==='vision'){
+            html='<i class="fas fa-eye" style="margin-right:4px;color:#ff9800;font-size:10px" title="Vision AI (Engine)"></i>';
+          }else if(engineData.source==='tmdb_fallback'){
+            html='<i class="fas fa-film" style="margin-right:4px;color:#2196f3;font-size:10px" title="TMDB (Engine)"></i>';
+          }else{
+            html='<i class="fas fa-microchip" style="margin-right:4px;color:#4caf50;font-size:10px" title="Python Engine"></i>';
+          }
+          html+=esc(engineData.response);
+          m.innerHTML=html;
+          return;
+        }
+      }
+    }catch(e){
+      ENGINE_AVAILABLE=false;
+    }
+  }
+
+  // Fallback: Cloudflare Worker vision-chat
   var body={
     question:q,
     channelName:channelName,
@@ -2078,18 +2111,21 @@ try{initApp();}catch(e){console.error('BOOT:',e);killSplash();}
 })();
 
 // ============================================================
-// EDGE MVP ENGINE v3 - Frontend Detection System
-// Scene Change Detection + Priority Intervals + Batch Detect + Source Attribution
+// EDGE MVP ENGINE v4 - Frontend Detection System
+// Pipeline: Scene Change → OCR → CLIP → Vision → TMDB
+// Supports Python Vision Engine (localhost:8900) + Cloudflare Worker fallback
 // ============================================================
 (function(){
 'use strict';
 
+var ENGINE_URL='http://localhost:8900'; // Python Vision Engine
+var ENGINE_AVAILABLE=false; // Auto-detected on first call
 var nowPlayingData={};
 var detectInterval=null;
 var currentChannel=null;
 var lastFrameHash=null;
 var sceneChangeCount=0;
-var detectionStats={total:0,bySource:{metadata:0,epg:0,vision:0}};
+var detectionStats={total:0,bySource:{metadata:0,epg:0,vision:0,ocr:0,clip:0}};
 
 // Channel priority intervals (seconds) - matches backend EDGE_CONFIG
 var PRIORITY_INTERVALS={
@@ -2125,7 +2161,7 @@ function captureFrame(video,quality){
 async function detectChannel(ch,force){
   if(!ch)return;
   var video=document.getElementById('hls-video');
-  var frame=captureFrame(video,0.4);
+  var frame=captureFrame(video,0.6);
   var frameHash=computeFrameHash(frame);
 
   // Scene change detection - skip if scene hasn't changed (unless forced)
@@ -2143,6 +2179,32 @@ async function detectChannel(ch,force){
   if(frame)body.frame=frame;
   body.metadata={title:ch.n,genre:[catLabel(ch.c)]};
 
+  // Try Python Vision Engine first (has FFmpeg, PaddleOCR, OpenCLIP)
+  if(ENGINE_AVAILABLE||!ENGINE_AVAILABLE){
+    try{
+      var engineResp=await fetch(ENGINE_URL+'/api/detect',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify(body),
+        signal:AbortSignal.timeout(8000)
+      });
+      if(engineResp.ok){
+        var engineData=await engineResp.json();
+        if(engineData&&engineData.success&&engineData.data&&engineData.data.title){
+          ENGINE_AVAILABLE=true;
+          nowPlayingData[ch.id]=engineData.data;
+          detectionStats.total++;
+          if(engineData.data.source)detectionStats.bySource[engineData.data.source]=(detectionStats.bySource[engineData.data.source]||0)+1;
+          updateNowPlayingUI(ch.id,engineData.data);
+          return engineData.data;
+        }
+      }
+    }catch(e){
+      ENGINE_AVAILABLE=false; // Engine not reachable, fall back
+    }
+  }
+
+  // Fallback: Cloudflare Worker detection pipeline
   try{
     var resp=await fetch('/api/detect',{
       method:'POST',
