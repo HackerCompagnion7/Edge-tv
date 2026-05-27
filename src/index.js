@@ -1,5 +1,6 @@
 export default {
   async fetch(request, env) {
+    try {
     const url = new URL(request.url);
 
     // CORS preflight
@@ -1219,7 +1220,17 @@ try{initApp();}catch(e){console.error('BOOT error:',e);killSplash();}
 </html>`;
 
     return new Response(html, {
-      headers: { 'Content-Type': 'text/html;charset=UTF-8' }
+      headers: {
+        'Content-Type': 'text/html;charset=UTF-8',
+        'Cache-Control': 'no-cache'
+      }
     });
+
+    } catch(err) {
+      return new Response('EDGE TV Error: ' + err.message, {
+        status: 500,
+        headers: { 'Content-Type': 'text/plain;charset=UTF-8' }
+      });
+    }
   }
 };
