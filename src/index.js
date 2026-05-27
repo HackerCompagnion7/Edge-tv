@@ -222,7 +222,7 @@ header nav a.active::after{content:'';position:absolute;bottom:-2px;left:0;width
 .cat-filter{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap}
 .cat-filter button{background:rgba(255,255,255,0.05);color:var(--gray);padding:7px 18px;border-radius:var(--radius-chip);font-size:12px;font-weight:500;transition:all var(--transition);border:1px solid rgba(255,255,255,0.08);backdrop-filter:blur(8px);display:flex;align-items:center;gap:5px}
 .cat-filter button:hover{border-color:rgba(255,255,255,0.2);color:var(--white)}
-.cat-filter button.active{background:var(--white);color:#0b0b0b;border-color:var(--white);font-weight:600}
+.cat-filter button.active{background:rgba(232,17,45,0.12);color:var(--white);border-color:var(--red);font-weight:600;box-shadow:0 0 12px rgba(232,17,45,0.25),inset 0 0 8px rgba(232,17,45,0.08)}
 
 .channels-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px}
 .ch-card{background:var(--surface);border-radius:var(--radius-card);overflow:hidden;border:1px solid rgba(255,255,255,0.04);transition:transform 240ms ease,box-shadow 240ms ease;position:relative;cursor:pointer;opacity:0;transform:translateY(10px)}
@@ -233,7 +233,7 @@ header nav a.active::after{content:'';position:absolute;bottom:-2px;left:0;width
 .ch-card:hover .ch-thumb-img{filter:brightness(0.5) saturate(1.6);transform:scale(1.08)}
 .ch-card .ch-thumb-overlay{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0.15) 0%,rgba(0,0,0,0.85) 100%);z-index:1}
 .ch-card .ch-thumb-icon{position:relative;z-index:2;font-size:32px;color:rgba(255,255,255,0.12);margin-bottom:4px}
-.ch-card .ch-thumb-label{font-family:var(--font-display);font-size:11px;color:rgba(255,255,255,0.95);letter-spacing:3px;text-align:center;padding:10px;word-break:break-word;position:relative;z-index:2;text-shadow:0 2px 12px rgba(0,0,0,0.8);font-weight:700}
+.ch-card .ch-thumb-label{font-family:var(--font-body);font-size:12px;color:rgba(255,255,255,0.95);letter-spacing:1px;text-align:center;padding:10px;word-break:break-word;position:relative;z-index:2;text-shadow:0 2px 12px rgba(0,0,0,0.8);font-weight:600}
 .ch-card .ch-logo{position:relative;z-index:2;height:60px;width:auto;max-width:140px;object-fit:contain;filter:drop-shadow(0 2px 8px rgba(0,0,0,0.6))}
 .ch-card .ch-logo-fb{position:relative;z-index:2;width:56px;height:56px;border-radius:14px;color:#fff;font-size:22px;font-weight:900;display:none;align-items:center;justify-content:center;font-family:var(--font-display);letter-spacing:1px;filter:drop-shadow(0 2px 8px rgba(0,0,0,0.6))}
 .ch-card .ch-thumb-src{font-family:var(--font-body);font-size:9px;color:rgba(255,255,255,0.5);letter-spacing:1px;text-align:center;position:relative;z-index:2;margin-top:-4px;text-transform:uppercase}
@@ -246,11 +246,33 @@ header nav a.active::after{content:'';position:absolute;bottom:-2px;left:0;width
 .ch-card .ch-play{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) scale(0.8);width:44px;height:44px;border-radius:50%;background:rgba(232,17,45,0.85);display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;opacity:0;transition:all var(--transition);z-index:4}
 .ch-card:hover .ch-play{opacity:1;transform:translate(-50%,-50%) scale(1)}
 .ch-card .ch-body{padding:12px 14px}
-.ch-card .ch-name{font-weight:600;font-size:13px;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ch-card .ch-name{font-family:var(--font-body);font-weight:600;font-size:13px;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ch-card .ch-desc{color:var(--muted);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 @keyframes livePulse{0%,100%{opacity:1}50%{opacity:0.7}}
 @keyframes dotPulse{0%,100%{opacity:1}50%{opacity:0.3}}
 
+.ch-card .ch-score{position:absolute;top:10px;right:10px;z-index:4;display:flex;align-items:center;gap:3px;font-size:8px;font-weight:700;letter-spacing:0.5px;padding:2px 6px;border-radius:3px}
+.ch-score.stable{background:rgba(76,175,80,0.2);color:#4caf50;border:1px solid rgba(76,175,80,0.3)}
+.ch-score.untested{background:rgba(255,255,255,0.08);color:var(--muted);border:1px solid rgba(255,255,255,0.1)}
+.ch-score.unstable{background:rgba(255,193,7,0.2);color:#ffc107;border:1px solid rgba(255,193,7,0.3)}
+.ch-card .ch-mini-preview{position:absolute;inset:0;z-index:5;opacity:0;transition:opacity 300ms ease;pointer-events:none;background-size:200% 200%;animation:previewShift 3s ease infinite}
+.ch-card:hover .ch-mini-preview{opacity:0.15}
+@keyframes previewShift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+.cw-scroll{display:flex;gap:14px;overflow-x:auto;padding-bottom:10px;scroll-snap-type:x mandatory;margin-bottom:28px}
+.cw-card{min-width:180px;background:var(--surface);border-radius:var(--radius-card);overflow:hidden;border:1px solid rgba(255,255,255,0.04);scroll-snap-align:start;flex-shrink:0;cursor:pointer;transition:all var(--transition);position:relative}
+.cw-card:hover{border-color:rgba(232,17,45,0.3);transform:translateY(-2px);box-shadow:0 4px 16px rgba(232,17,45,0.15)}
+.cw-card .cw-thumb{width:100%;height:100px;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.cw-card .cw-thumb-bg{position:absolute;inset:0;background-size:cover;background-position:center;filter:brightness(0.3) saturate(1.3)}
+.cw-card .cw-thumb-overlay{position:absolute;inset:0;background:linear-gradient(180deg,transparent 0%,rgba(0,0,0,0.9) 100%)}
+.cw-card .cw-icon{position:relative;z-index:2;font-size:24px;color:rgba(255,255,255,0.7)}
+.cw-card .cw-play-sm{position:absolute;bottom:8px;right:8px;width:28px;height:28px;border-radius:50%;background:var(--red);display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px;z-index:3;opacity:0;transition:opacity var(--transition)}
+.cw-card:hover .cw-play-sm{opacity:1}
+.cw-card .cw-info{padding:10px 12px}
+.cw-card .cw-name{font-family:var(--font-body);font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px}
+.cw-card .cw-meta{font-size:10px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.cw-card .cw-progress{height:2px;background:var(--elevated);border-radius:1px;margin-top:6px;overflow:hidden}
+.cw-card .cw-progress-bar{height:100%;background:var(--red);border-radius:1px}
+.section-title .st-badge{font-size:9px;background:var(--red);color:#fff;padding:2px 8px;border-radius:10px;font-weight:700;letter-spacing:0.5px;margin-left:8px;font-family:var(--font-body)}
 .skeleton-card{background:var(--surface);border-radius:var(--radius-card);overflow:hidden;border:1px solid rgba(255,255,255,0.04)}
 .skeleton-thumb{width:100%;height:160px;background:linear-gradient(90deg,var(--elevated) 25%,#252525 50%,var(--elevated) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite}
 .skeleton-body{padding:12px 14px}
@@ -275,7 +297,7 @@ header nav a.active::after{content:'';position:absolute;bottom:-2px;left:0;width
 .on-air-ch{display:flex;align-items:center;gap:10px;padding:6px;border-radius:6px;cursor:pointer;transition:background var(--transition);margin-bottom:4px}
 .on-air-ch:hover{background:var(--elevated)}
 .on-air-ch .oa-dot{width:8px;height:8px;border-radius:50%;background:var(--red);flex-shrink:0;animation:dotPulse 1.5s infinite}
-.on-air-ch .oa-name{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
+.on-air-ch .oa-name{font-family:var(--font-body);font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
 .on-air-ch .oa-viewers{font-size:10px;color:var(--muted)}
 .on-air-ch .oa-logo{height:20px;width:auto;max-width:60px;object-fit:contain;flex-shrink:0}
 .on-air-ch .oa-logo-fb{height:20px;width:20px;border-radius:4px;color:#fff;font-size:9px;font-weight:900;display:none;align-items:center;justify-content:center;font-family:var(--font-display);flex-shrink:0}
@@ -284,7 +306,7 @@ header nav a.active::after{content:'';position:absolute;bottom:-2px;left:0;width
 .trending-item{display:flex;align-items:center;gap:8px;margin-bottom:8px;cursor:pointer;padding:4px 6px;border-radius:4px;transition:background var(--transition)}
 .trending-item:hover{background:var(--elevated)}
 .trending-item .tr-rank{font-family:var(--font-display);font-size:14px;color:var(--red);min-width:20px}
-.trending-item .tr-name{font-size:12px;font-weight:500;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.trending-item .tr-name{font-family:var(--font-body);font-size:12px;font-weight:500;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .trending-item .tr-viewers{font-size:10px;color:var(--muted)}
 .mp-chat{display:flex;flex-direction:column;gap:8px}
 .mp-input-wrap{display:flex;gap:6px}
@@ -363,10 +385,10 @@ footer .f-stats .stat strong{color:var(--white);font-family:var(--font-display)}
 <header><div class="logo-mark">E<span>D</span>GE</div><nav><a href="#" class="active" data-nav="home"><i class="fas fa-home"></i><span>Home</span></a><a href="#" data-nav="live"><i class="fas fa-tv"></i><span>Live</span></a><a href="#" data-nav="sports"><i class="fas fa-futbol"></i><span>Sports</span></a><a href="#" data-nav="news"><i class="fas fa-newspaper"></i><span>News</span></a></nav><div class="hdr-right"><button id="sound-toggle" title="Toggle Sound"><i class="fas fa-volume-mute"></i></button><button id="search-toggle" title="Search"><i class="fas fa-search"></i></button></div></header>
 <div id="search-box"><input type="text" id="search-input" placeholder="Buscar canales..."></div>
 <section class="hero" id="hero-section"><div id="hero-slides"></div><div class="hero-arrows"><button id="hero-prev"><i class="fas fa-chevron-left"></i></button><button id="hero-next"><i class="fas fa-chevron-right"></i></button><div class="hero-dots" id="hero-dots"></div></section>
-<div class="main-layout"><main class="main-content"><section id="channels-section"><h2 class="section-title"><span class="st-bar"></span>Canales en Vivo<span class="st-count" id="ch-count"></span></h2><div class="cat-filter" id="cat-filter"></div><div class="channels-grid" id="channels-grid"></div></section><section id="upcoming-section" style="margin-top:40px"><h2 class="section-title"><span class="st-bar"></span>Coming Up</h2><div class="upcoming-scroll" id="upcoming-scroll"></div></section></main><aside class="sidebar"><div class="sidebar-section"><div class="sidebar-toggle" id="on-air-toggle"><h3><i class="fas fa-broadcast-tower"></i>En Vivo Ahora</h3><i class="fas fa-chevron-down chevron"></i></div><div class="sidebar-body" id="on-air-body"></div></div><div class="sidebar-section"><div class="sidebar-toggle" id="trending-toggle"><h3><i class="fas fa-fire"></i>Tendencias</h3><i class="fas fa-chevron-down chevron"></i></div><div class="sidebar-body" id="trending-body"></div></div><div class="sidebar-section"><div class="sidebar-toggle" id="mistral-toggle"><h3><i class="fas fa-robot"></i>Asistente IA</h3><i class="fas fa-chevron-down chevron"></i></div><div class="sidebar-body" id="mistral-body"><div class="mp-chat"><div class="mp-msg" id="mistral-msg">Preguntame sobre canales!</div><div class="mp-input-wrap"><input class="mp-input" id="mistral-input" placeholder="Pregunta sobre canales..."><button class="mp-send" id="mistral-send"><i class="fas fa-paper-plane"></i></button></div></div></div></div></aside></div>
+<div class="main-layout"><main class="main-content"><section id="continue-section" style="display:none"><h2 class="section-title"><span class="st-bar"></span>Continue Watching<span class="st-badge" id="cw-count">0</span></h2><div class="cw-scroll" id="cw-scroll"></div></section><section id="channels-section"><h2 class="section-title"><span class="st-bar"></span>Canales en Vivo<span class="st-count" id="ch-count"></span></h2><div class="cat-filter" id="cat-filter"></div><div class="channels-grid" id="channels-grid"></div></section><section id="upcoming-section" style="margin-top:40px"><h2 class="section-title"><span class="st-bar"></span>Coming Up</h2><div class="upcoming-scroll" id="upcoming-scroll"></div></section></main><aside class="sidebar"><div class="sidebar-section"><div class="sidebar-toggle" id="on-air-toggle"><h3><i class="fas fa-broadcast-tower"></i>En Vivo Ahora</h3><i class="fas fa-chevron-down chevron"></i></div><div class="sidebar-body" id="on-air-body"></div></div><div class="sidebar-section"><div class="sidebar-toggle" id="trending-toggle"><h3><i class="fas fa-fire"></i>Tendencias</h3><i class="fas fa-chevron-down chevron"></i></div><div class="sidebar-body" id="trending-body"></div></div><div class="sidebar-section"><div class="sidebar-toggle" id="mistral-toggle"><h3><i class="fas fa-robot"></i>Asistente IA</h3><i class="fas fa-chevron-down chevron"></i></div><div class="sidebar-body" id="mistral-body"><div class="mp-chat"><div class="mp-msg" id="mistral-msg">Preguntame sobre canales!</div><div class="mp-input-wrap"><input class="mp-input" id="mistral-input" placeholder="Pregunta sobre canales..."><button class="mp-send" id="mistral-send"><i class="fas fa-paper-plane"></i></button></div></div></div></div></aside></div>
 <div id="player-modal"><div class="player-wrap"><button class="player-close" id="player-close"><i class="fas fa-times"></i></button><video id="hls-video" muted playsinline></video><div class="player-spinner" id="player-spinner"><div class="spinner-ring"></div></div><div class="buffering-overlay" id="buffering-overlay"><div class="buffer-pulse"></div></div><div class="offline-overlay" id="offline-overlay"><i class="fas fa-signal off-icon"></i><div class="off-text">CANAL OFFLINE</div><div class="off-hint">Este canal puede estar bloqueado. Prueba otro o usa VPN.</div><button class="btn-retry" id="btn-retry"><i class="fas fa-redo"></i> Reintentar</button><button class="btn-switch" id="btn-switch"><i class="fas fa-exchange-alt"></i> Siguiente Canal</button></div><div class="player-bar"><button id="play-pause"><i class="fas fa-play"></i></button><button id="vol-btn"><i class="fas fa-volume-mute"></i></button><input type="range" id="vol-slider" min="0" max="100" value="0" class="vol-slider"><span class="p-title" id="player-title">-</span><span class="p-quality" id="quality-indicator">HD</span><span class="p-status connecting" id="player-status">CONNECTING</span><button id="audio-btn"><i class="fas fa-headphones"></i></button><button id="fullscreen-btn"><i class="fas fa-expand"></i></button></div></div></div>
 <div class="toast" id="toast"></div>
-<footer><div class="f-brand">EDGE <span>v5.0</span> &mdash; IPTV 100% Gratis</div><div class="f-stats"><div class="stat"><strong id="stat-ch">211</strong> canales</div><div class="stat"><strong id="stat-hd">211</strong> HD</div><div class="stat"><strong>4</strong> categorias</div></div></footer>
+<footer><div class="f-brand">EDGE <span>v6.0</span> &mdash; IPTV 100% Gratis</div><div class="f-stats"><div class="stat"><strong id="stat-ch">211</strong> canales</div><div class="stat"><strong id="stat-hd">211</strong> HD</div><div class="stat"><strong>5</strong> categorias</div></div></footer>
 <script>
 (function(){function k(){var s=document.getElementById('splash');if(s)s.classList.add('hide');}setTimeout(k,2500);setTimeout(k,3500);setTimeout(k,5000);document.addEventListener('DOMContentLoaded',function(){setTimeout(k,800);});window.addEventListener('load',function(){setTimeout(k,300);});window.onerror=function(){k();return true;};})();
 <\/script>
@@ -588,13 +610,33 @@ var CHANNELS=[
 {id:211,n:"Dream Türk",s:"https://live.duhnet.tv/S2/HLS_LIVE/dreamturknp/playlist.m3u8",c:"music",q:"HD",src:"Music",v:3289,d:"Dream Türk - En vivo",clr:"#AD1457",logo:""}
 ];
 var CATS=[{id:"all",label:"Todos",icon:"fa-globe"},{id:"movies",label:"Peliculas",icon:"fa-film"},{id:"french",label:"Francais",icon:"fa-flag"},{id:"kids",label:"Ninos",icon:"fa-child"},{id:"music",label:"Musica",icon:"fa-music"}];
-var CAT_GRAD={news:'linear-gradient(135deg,#1a237e 0%,#0d47a1 50%,#01579b 100%)',sports:'linear-gradient(135deg,#1b5e20 0%,#2e7d32 50%,#388e3c 100%)',movies:'linear-gradient(135deg,#311b92 0%,#4a148c 50%,#6a1b9a 100%)',entertainment:'linear-gradient(135deg,#bf360c 0%,#d84315 50%,#e65100 100%)',music:'linear-gradient(135deg,#880e4f 0%,#ad1457 50%,#c2185b 100%)',kids:'linear-gradient(135deg,#e65100 0%,#f57c00 50%,#ff9800 100%)',documentary:'linear-gradient(135deg,#263238 0%,#37474f 50%,#455a64 100%)',religious:'linear-gradient(135deg,#4a148c 0%,#6a1b9a 50%,#7b1fa2 100%)',general:'linear-gradient(135deg,#004d40 0%,#00695c 50%,#00796b 100%)'};
-var CAT_ICON={news:'fa-newspaper',sports:'fa-futbol',movies:'fa-film',entertainment:'fa-star',music:'fa-music',kids:'fa-child',documentary:'fa-book-open',religious:'fa-pray',general:'fa-tv'};
+var CAT_GRAD={news:'linear-gradient(135deg,#1a237e 0%,#0d47a1 50%,#01579b 100%)',sports:'linear-gradient(135deg,#1b5e20 0%,#2e7d32 50%,#388e3c 100%)',movies:'linear-gradient(135deg,#311b92 0%,#4a148c 50%,#6a1b9a 100%)',entertainment:'linear-gradient(135deg,#bf360c 0%,#d84315 50%,#e65100 100%)',music:'linear-gradient(135deg,#880e4f 0%,#ad1457 50%,#c2185b 100%)',kids:'linear-gradient(135deg,#e65100 0%,#f57c00 50%,#ff9800 100%)',french:'linear-gradient(135deg,#0d47a1 0%,#1565c0 50%,#1976d2 100%)',documentary:'linear-gradient(135deg,#263238 0%,#37474f 50%,#455a64 100%)',religious:'linear-gradient(135deg,#4a148c 0%,#6a1b9a 50%,#7b1fa2 100%)',general:'linear-gradient(135deg,#004d40 0%,#00695c 50%,#00796b 100%)'};
+var CAT_ICON={news:'fa-newspaper',sports:'fa-futbol',movies:'fa-film',entertainment:'fa-star',music:'fa-music',kids:'fa-child',french:'fa-flag',documentary:'fa-book-open',religious:'fa-pray',general:'fa-tv'};
 
 var curFilter='all',curCh=null,hlsInst=null,heroIdx=0,heroIv=null;
 var retryCount=0,MAX_RETRIES=3,playerRetryTimer=null;
 var audioCtx=null,soundEnabled=true;
 try{soundEnabled=localStorage.getItem('edge-sound')!=='off';}catch(e){}
+
+// Smart features: Continue Watching + Stream Quality Scoring
+var streamScores={};
+try{streamScores=JSON.parse(localStorage.getItem('edge-scores')||'{}');}catch(e){streamScores={};}
+function saveScores(){try{localStorage.setItem('edge-scores',JSON.stringify(streamScores));}catch(e){}}
+function getScore(id){return streamScores[id]||{ok:0,fail:0};}
+function markOk(id){var s=getScore(id);s.ok++;streamScores[id]=s;saveScores();}
+function markFail(id){var s=getScore(id);s.fail++;streamScores[id]=s;saveScores();}
+function scoreLabel(id){var s=getScore(id);if(s.ok===0&&s.fail===0)return'new';var r=s.ok/(s.ok+s.fail);if(r>=0.7)return'stable';if(r>=0.3)return'unstable';return'broken';}
+
+var continueW=[];
+try{continueW=JSON.parse(localStorage.getItem('edge-cw')||'[]');}catch(e){continueW=[];}
+function saveCW(){try{localStorage.setItem('edge-cw',JSON.stringify(continueW.slice(0,20)));}catch(e){}}
+function addToCW(ch){
+  continueW=continueW.filter(function(c){return c.id!==ch.id;});
+  continueW.unshift({id:ch.id,n:ch.n,c:ch.c,clr:ch.clr,ts:Date.now()});
+  if(continueW.length>20)continueW=continueW.slice(0,20);
+  saveCW();
+  renderContinueWatching();
+}
 
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function fmtV(v){return v>=1000?(v/1000).toFixed(1)+'K':v.toString();}
@@ -636,7 +678,9 @@ function renderGrid(){
   if(!list.length){grid.innerHTML='<div style="text-align:center;padding:40px;color:var(--muted)">No se encontraron canales</div>';return;}
   var h='';
   for(var i=0;i<list.length;i++){var ch=list[i],cg=CAT_GRAD[ch.c]||CAT_GRAD.news,ci=CAT_ICON[ch.c]||'fa-tv';
-    h+='<div class="ch-card" data-id="'+ch.id+'"><div class="ch-thumb"><div class="ch-thumb-img" style="background:'+cg+'"></div><div class="ch-thumb-overlay"></div>'+logoImg(ch,'ch-logo')+logoFB(ch,'ch-logo-fb')+(ch.logo?'':'<i class="fas '+ci+' ch-thumb-icon"></i>')+'<div class="ch-thumb-label">'+esc(ch.n)+'</div><div class="ch-thumb-src">'+esc(ch.src)+'</div><span class="live-badge">LIVE</span><span class="ch-quality">'+ch.q+'</span><span class="ch-viewers"><i class="fas fa-eye"></i> '+fmtV(ch.v)+'</span><span class="ch-cat-tag">'+catLabel(ch.c)+'</span><div class="ch-play"><i class="fas fa-play"></i></div></div><div class="ch-body"><div class="ch-name">'+esc(ch.n)+'</div><div class="ch-desc">'+esc(ch.d)+'</div></div></div>';}
+    var sl=scoreLabel(ch.id),sc=getScore(ch.id);
+    var scoreHtml=sl==='new'?'<span class="ch-score untested"><i class="fas fa-circle" style="font-size:5px"></i> NEW</span>':sl==='stable'?'<span class="ch-score stable"><i class="fas fa-check-circle" style="font-size:7px"></i> '+Math.round(sc.ok/(sc.ok+sc.fail)*100)+'%</span>':sl==='unstable'?'<span class="ch-score unstable"><i class="fas fa-exclamation-circle" style="font-size:7px"></i> '+Math.round(sc.ok/(sc.ok+sc.fail)*100)+'%</span>':'';
+    h+='<div class="ch-card" data-id="'+ch.id+'"><div class="ch-thumb"><div class="ch-thumb-img" style="background:'+cg+'"></div><div class="ch-mini-preview" style="background:linear-gradient(45deg,'+ch.clr+'22,'+ch.clr+'44,'+ch.clr+'22)"></div><div class="ch-thumb-overlay"></div>'+logoImg(ch,'ch-logo')+logoFB(ch,'ch-logo-fb')+(ch.logo?'':'<i class="fas '+ci+' ch-thumb-icon"></i>')+'<div class="ch-thumb-label">'+esc(ch.n)+'</div><div class="ch-thumb-src">'+esc(ch.src)+'</div><span class="live-badge">LIVE</span>'+scoreHtml+'<span class="ch-viewers"><i class="fas fa-eye"></i> '+fmtV(ch.v)+'</span><span class="ch-cat-tag">'+catLabel(ch.c)+'</span><div class="ch-play"><i class="fas fa-play"></i></div></div><div class="ch-body"><div class="ch-name">'+esc(ch.n)+'</div><div class="ch-desc">'+esc(ch.d)+'</div></div></div>';}
   grid.innerHTML=h;setTimeout(fixLogos,100);
 }
 
@@ -657,6 +701,23 @@ function renderHero(){
 function startHero(){heroIv=setInterval(function(){var sl=document.querySelectorAll('.hero-slide'),dt=document.querySelectorAll('.hero-dots span');if(!sl.length)return;sl[heroIdx].classList.remove('active');dt[heroIdx].classList.remove('active');heroIdx=(heroIdx+1)%sl.length;sl[heroIdx].classList.add('active');dt[heroIdx].classList.add('active');},6000);}
 function goHero(idx){var sl=document.querySelectorAll('.hero-slide'),dt=document.querySelectorAll('.hero-dots span');if(!sl.length)return;sl[heroIdx].classList.remove('active');dt[heroIdx].classList.remove('active');heroIdx=idx%sl.length;sl[heroIdx].classList.add('active');dt[heroIdx].classList.add('active');}
 
+function renderContinueWatching(){
+  var sec=document.getElementById('continue-section'),scr=document.getElementById('cw-scroll'),cnt=document.getElementById('cw-count');
+  if(!sec||!scr)return;
+  // Only show channels that still exist
+  continueW=continueW.filter(function(cw){return CHANNELS.find(function(ch){return ch.id===cw.id;});});
+  if(!continueW.length){sec.style.display='none';return;}
+  sec.style.display='block';
+  if(cnt)cnt.textContent=continueW.length;
+  var h='';
+  for(var i=0;i<continueW.length;i++){var cw=continueW[i],ch=CHANNELS.find(function(x){return x.id===cw.id;});if(!ch)continue;
+    var ci=CAT_ICON[ch.c]||'fa-tv',cg=CAT_GRAD[ch.c]||CAT_GRAD.news;
+    var ago=Math.round((Date.now()-cw.ts)/60000);
+    var timeStr=ago<1?'Ahora':ago<60?ago+'m':ago<1440?Math.round(ago/60)+'h':Math.round(ago/1440)+'d';
+    h+='<div class="cw-card" data-id="'+ch.id+'"><div class="cw-thumb"><div class="cw-thumb-bg" style="background:'+cg+'"></div><div class="cw-thumb-overlay"></div><i class="fas '+ci+' cw-icon"></i><div class="cw-play-sm"><i class="fas fa-play"></i></div></div><div class="cw-info"><div class="cw-name">'+esc(ch.n)+'</div><div class="cw-meta"><span><i class="fas fa-clock" style="font-size:8px;margin-right:3px"></i>'+timeStr+'</span><span>'+catLabel(ch.c)+'</span></div><div class="cw-progress"><div class="cw-progress-bar" style="width:'+(Math.random()*40+60)+'%"></div></div></div></div>';}
+  scr.innerHTML=h;
+}
+
 function renderSidebar(){
   var ob=document.getElementById('on-air-body'),tb=document.getElementById('trending-body');
   var top=CHANNELS.slice().sort(function(a,b){return b.v-a.v;}).slice(0,6);
@@ -673,7 +734,7 @@ function renderUpcoming(){
   el.innerHTML=h;
 }
 
-function openPlayer(ch){curCh=ch;retryCount=0;if(playerRetryTimer){clearTimeout(playerRetryTimer);playerRetryTimer=null;}var m=document.getElementById('player-modal'),v=document.getElementById('hls-video'),t=document.getElementById('player-title'),st=document.getElementById('player-status');if(t)t.textContent=ch.n;if(st){st.className='p-status connecting';st.textContent='CONNECTING';}if(m)m.classList.add('open');hideOffline();showSpinner();startStream(ch.s);document.body.style.overflow='hidden';var ms=document.getElementById('mistral-msg');if(ms)ms.textContent='Now playing: '+ch.n+'. Ask me for similar channels!';}
+function openPlayer(ch){curCh=ch;retryCount=0;if(playerRetryTimer){clearTimeout(playerRetryTimer);playerRetryTimer=null;}var m=document.getElementById('player-modal'),v=document.getElementById('hls-video'),t=document.getElementById('player-title'),st=document.getElementById('player-status');if(t)t.textContent=ch.n;if(st){st.className='p-status connecting';st.textContent='CONNECTING';}if(m)m.classList.add('open');hideOffline();showSpinner();startStream(ch.s);document.body.style.overflow='hidden';addToCW(ch);predictivePreload(ch);var ms=document.getElementById('mistral-msg');if(ms)ms.textContent='Now playing: '+ch.n+'. Ask me for similar channels!';}
 
 function startStream(origUrl){
   if(hlsInst){hlsInst.destroy();hlsInst=null;}
@@ -697,9 +758,10 @@ function startStream(origUrl){
       fragLoadingMaxRetry:4
     });
     hlsInst.loadSource(proxyUrl);hlsInst.attachMedia(v);
-    hlsInst.on(Hls.Events.MANIFEST_PARSED,function(){v.play().catch(function(){});hideSpinner();setStatus('live');updateQuality();});
+    hlsInst.on(Hls.Events.MANIFEST_PARSED,function(){v.play().catch(function(){});hideSpinner();setStatus('live');updateQuality();if(curCh)markOk(curCh.id);});
     hlsInst.on(Hls.Events.ERROR,function(ev,d){
       if(d.fatal){
+        if(curCh)markFail(curCh.id);
         if(d.type===Hls.ErrorTypes.MEDIA_ERROR){
           hlsInst.recoverMediaError();
         }else if(d.type===Hls.ErrorTypes.NETWORK_ERROR){
@@ -732,18 +794,40 @@ function showToast(msg){var e=document.getElementById('toast');if(!e)return;e.te
 
 function toggleSound(){soundEnabled=!soundEnabled;try{localStorage.setItem('edge-sound',soundEnabled?'on':'off');}catch(e){}var b=document.getElementById('sound-toggle');if(b)b.innerHTML=soundEnabled?'<i class="fas fa-volume-up"></i>':'<i class="fas fa-volume-mute"></i>';if(soundEnabled&&!audioCtx)initAudio();showToast(soundEnabled?'Sound on':'Sound off');}
 
-function doSearch(q){q=q.toLowerCase().trim();if(!q){curFilter='all';renderGrid();setupLazyLoad();renderCats();return;}var r=CHANNELS.filter(function(ch){return ch.n.toLowerCase().indexOf(q)>=0||ch.c.indexOf(q)>=0||ch.src.toLowerCase().indexOf(q)>=0||ch.d.toLowerCase().indexOf(q)>=0;});var g=document.getElementById('channels-grid'),ce=document.getElementById('ch-count');if(ce)ce.textContent=r.length+' results';if(!r.length){if(g)g.innerHTML='<div style="text-align:center;padding:40px;color:var(--muted)">No results</div>';return;}var h='';for(var i=0;i<r.length;i++){var ch=r[i],cg=CAT_GRAD[ch.c]||CAT_GRAD.news,ci=CAT_ICON[ch.c]||'fa-tv';h+='<div class="ch-card visible" data-id="'+ch.id+'"><div class="ch-thumb"><div class="ch-thumb-img" style="background:'+cg+'"></div><div class="ch-thumb-overlay"></div>'+logoImg(ch,'ch-logo')+logoFB(ch,'ch-logo-fb')+'<div class="ch-thumb-label">'+esc(ch.n)+'</div><div class="ch-thumb-src">'+esc(ch.src)+'</div><span class="live-badge">LIVE</span><span class="ch-quality">'+ch.q+'</span><span class="ch-viewers"><i class="fas fa-eye"></i> '+fmtV(ch.v)+'</span><span class="ch-cat-tag">'+catLabel(ch.c)+'</span><div class="ch-play"><i class="fas fa-play"></i></div></div><div class="ch-body"><div class="ch-name">'+esc(ch.n)+'</div><div class="ch-desc">'+esc(ch.d)+'</div></div></div>';}if(g)g.innerHTML=h;setTimeout(fixLogos,100);}
+function doSearch(q){q=q.toLowerCase().trim();if(!q){curFilter='all';renderGrid();setupLazyLoad();renderCats();return;}var r=CHANNELS.filter(function(ch){return ch.n.toLowerCase().indexOf(q)>=0||ch.c.indexOf(q)>=0||ch.src.toLowerCase().indexOf(q)>=0||ch.d.toLowerCase().indexOf(q)>=0;});var g=document.getElementById('channels-grid'),ce=document.getElementById('ch-count');if(ce)ce.textContent=r.length+' results';if(!r.length){if(g)g.innerHTML='<div style="text-align:center;padding:40px;color:var(--muted)">No results</div>';return;}var h='';for(var i=0;i<r.length;i++){var ch=r[i],cg=CAT_GRAD[ch.c]||CAT_GRAD.news,ci=CAT_ICON[ch.c]||'fa-tv';var sl=scoreLabel(ch.id),sc=getScore(ch.id);var scoreHtml=sl==='new'?'':sl==='stable'?'<span class="ch-score stable"><i class="fas fa-check-circle" style="font-size:7px"></i> '+Math.round(sc.ok/(sc.ok+sc.fail)*100)+'%</span>':sl==='unstable'?'<span class="ch-score unstable"><i class="fas fa-exclamation-circle" style="font-size:7px"></i> '+Math.round(sc.ok/(sc.ok+sc.fail)*100)+'%</span>':'';h+='<div class="ch-card visible" data-id="'+ch.id+'"><div class="ch-thumb"><div class="ch-thumb-img" style="background:'+cg+'"></div><div class="ch-mini-preview" style="background:linear-gradient(45deg,'+ch.clr+'22,'+ch.clr+'44,'+ch.clr+'22)"></div><div class="ch-thumb-overlay"></div>'+logoImg(ch,'ch-logo')+logoFB(ch,'ch-logo-fb')+'<div class="ch-thumb-label">'+esc(ch.n)+'</div><div class="ch-thumb-src">'+esc(ch.src)+'</div><span class="live-badge">LIVE</span>'+scoreHtml+'<span class="ch-viewers"><i class="fas fa-eye"></i> '+fmtV(ch.v)+'</span><span class="ch-cat-tag">'+catLabel(ch.c)+'</span><div class="ch-play"><i class="fas fa-play"></i></div></div><div class="ch-body"><div class="ch-name">'+esc(ch.n)+'</div><div class="ch-desc">'+esc(ch.d)+'</div></div></div>';}if(g)g.innerHTML=h;setTimeout(fixLogos,100);}
 
 function updateStats(){var c=document.getElementById('stat-ch'),h=document.getElementById('stat-hd');if(c)c.textContent=CHANNELS.length;if(h)h.textContent=CHANNELS.filter(function(ch){return ch.q==='1080p';}).length;}
 
 function askMistral(q,ctx){var m=document.getElementById('mistral-msg');if(!m)return;m.textContent='Thinking...';var sp='You are EDGE IPTV assistant. '+CHANNELS.length+' free HD channels. ';var cats={};for(var i=0;i<CHANNELS.length;i++){var ch=CHANNELS[i];if(!cats[ch.c])cats[ch.c]=[];cats[ch.c].push(ch.n);}for(var k in cats)sp+=k+': '+cats[k].join(', ')+'. ';if(ctx)sp+='Watching: '+ctx+'. ';sp+='Be brief. Recommend by name.';
 fetch('/api/ai',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:[{role:'system',content:sp},{role:'user',content:q}],max_tokens:200})}).then(function(r){return r.json();}).then(function(d){if(d.choices&&d.choices[0])m.textContent=d.choices[0].message.content;else if(d.error)m.textContent=typeof d.error==='string'?d.error:JSON.stringify(d.error);else m.textContent='No response.';}).catch(function(){var ql=q.toLowerCase(),mt=CHANNELS.filter(function(ch){return ch.n.toLowerCase().indexOf(ql)>=0||ch.c.indexOf(ql)>=0;}).slice(0,5);m.textContent=mt.length?'Try: '+mt.map(function(c){return c.n+' ('+catLabel(c.c)+')';}).join(', '):'No matches. Try "news" or "sports".';});}
 
-function initApp(){try{renderCats();renderSkeletons();setTimeout(function(){renderGrid();setupLazyLoad();},150);renderHero();startHero();renderSidebar();renderUpcoming();bindAll();updateStats();}catch(e){console.error('initApp:',e);}killSplash();}
+// Predictive Preload: prefetch next channel's .m3u8 manifest
+var preloaded={};
+function predictivePreload(currentCh){
+  var same=CHANNELS.filter(function(ch){return ch.c===currentCh.c&&ch.id!==currentCh.id;});
+  if(!same.length)return;
+  var next=same[0];
+  if(preloaded[next.id])return;
+  preloaded[next.id]=true;
+  var proxyUrl=location.origin+'/proxy?url='+encodeURIComponent(next.s);
+  // Just fetch the manifest to warm the cache - don't play
+  fetch(proxyUrl,{method:'GET',mode:'cors'}).catch(function(){});
+}
+
+// Stream Alive Detection - quick HEAD check
+function checkAlive(ch,callback){
+  var proxyUrl=location.origin+'/proxy?url='+encodeURIComponent(ch.s);
+  var ctrl=new AbortController();
+  var timer=setTimeout(function(){ctrl.abort();callback(false);},5000);
+  fetch(proxyUrl,{method:'GET',signal:ctrl.signal}).then(function(r){clearTimeout(timer);callback(r.ok);}).catch(function(){clearTimeout(timer);callback(false);});
+}
+
+function initApp(){try{renderCats();renderSkeletons();setTimeout(function(){renderGrid();setupLazyLoad();},150);renderHero();startHero();renderContinueWatching();renderSidebar();renderUpcoming();bindAll();updateStats();}catch(e){console.error('initApp:',e);}killSplash();}
 
 function bindAll(){
   var catEl=document.getElementById('cat-filter');if(catEl)catEl.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;curFilter=b.getAttribute('data-cat');playClick();renderCats();renderGrid();setupLazyLoad();});
   var gridEl=document.getElementById('channels-grid');if(gridEl)gridEl.addEventListener('click',function(e){var c=e.target.closest('.ch-card');if(!c)return;var id=parseInt(c.getAttribute('data-id')),ch=CHANNELS.find(function(x){return x.id===id;});if(ch){playClick();openPlayer(ch);}});
+  var cwEl=document.getElementById('cw-scroll');if(cwEl)cwEl.addEventListener('click',function(e){var c=e.target.closest('.cw-card');if(!c)return;var id=parseInt(c.getAttribute('data-id')),ch=CHANNELS.find(function(x){return x.id===id;});if(ch){playClick();openPlayer(ch);}});
   var hn=document.getElementById('hero-next'),hp=document.getElementById('hero-prev'),hd=document.getElementById('hero-dots'),hs=document.getElementById('hero-slides');
   if(hn)hn.addEventListener('click',function(){goHero(heroIdx+1);});if(hp)hp.addEventListener('click',function(){goHero(heroIdx-1<0?4:heroIdx-1);});
   if(hd)hd.addEventListener('click',function(e){var d=e.target.closest('span');if(!d)return;goHero(parseInt(d.getAttribute('data-idx')));});
