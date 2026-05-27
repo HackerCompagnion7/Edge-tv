@@ -1,27 +1,49 @@
 export default {
   async fetch(request, env) {
-    // ===== MISTRAL AI PROXY ROUTE =====
     const url = new URL(request.url);
+
+    // CORS preflight
+    if (url.pathname === '/api/ai' && request.method === 'OPTIONS') {
+      return new Response(null, {
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'POST,OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type'
+        }
+      });
+    }
+
+    // Mistral AI proxy
     if (url.pathname === '/api/ai' && request.method === 'POST') {
       try {
         const body = await request.json();
         const apiKey = env.MISTRAL_API || env.MISTRAL_API_KEY || '';
         if (!apiKey) {
-          return new Response(JSON.stringify({error:'MISTRAL_API not configured. Add it in Cloudflare Dashboard > Workers > Settings > Variables.'}), {status:500, headers:{'Content-Type':'application/json','Access-Control-Allow-Origin':'*'}});
+          return new Response(
+            JSON.stringify({ error: 'MISTRAL_API not configured. Add it in Cloudflare Dashboard > Workers > Settings > Variables.' }),
+            { status: 500, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
+          );
         }
         const resp = await fetch('https://api.mistral.ai/v1/chat/completions', {
-          method:'POST',
-          headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},
-          body:JSON.stringify({model:'mistral-small',messages:body.messages||[],max_tokens:body.max_tokens||150})
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+          body: JSON.stringify({
+            model: body.model || 'mistral-small',
+            messages: body.messages || [],
+            max_tokens: body.max_tokens || 200
+          })
         });
         const data = await resp.json();
-        return new Response(JSON.stringify(data), {status:resp.status, headers:{'Content-Type':'application/json','Access-Control-Allow-Origin':'*'}});
-      } catch(e) {
-        return new Response(JSON.stringify({error:e.message}), {status:500, headers:{'Content-Type':'application/json','Access-Control-Allow-Origin':'*'}});
+        return new Response(JSON.stringify(data), {
+          status: resp.status,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        });
+      } catch (e) {
+        return new Response(JSON.stringify({ error: e.message }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        });
       }
-    }
-    if (url.pathname === '/api/ai' && request.method === 'OPTIONS') {
-      return new Response(null, {headers:{'Access-Control-Allow-Origin':'*','Access-Control-Allow-Methods':'POST,OPTIONS','Access-Control-Allow-Headers':'Content-Type'}});
     }
 
     const html = `<!DOCTYPE html>
@@ -29,7 +51,7 @@ export default {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>EDGE v4.0 - Free HD IPTV</title>
+<title>EDGE - Free HD IPTV</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -37,7 +59,7 @@ export default {
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#0b0b0b;--surface:#141414;--elevated:#1d1d1d;--overlay:rgba(11,11,11,0.7);
+  --bg:#0b0b0b;--surface:#141414;--elevated:#1d1d1d;
   --red:#e8112d;--red-glow:rgba(232,17,45,0.3);
   --white:#f0f0f0;--gray:#a0a0a0;--muted:#666;
   --font-display:'Orbitron',monospace;--font-body:'Space Grotesk',sans-serif;
@@ -54,10 +76,9 @@ img{max-width:100%;display:block}
 ::-webkit-scrollbar-track{background:var(--surface)}
 ::-webkit-scrollbar-thumb{background:var(--muted);border-radius:3px}
 
-/* ===== SPLASH ===== */
-#splash{position:fixed;inset:0;z-index:10000;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity 0.8s ease,visibility 0.8s;animation:splashAutoHide 0.8s ease 3s forwards}
-#splash.gone{opacity:0;visibility:hidden;pointer-events:none;animation:none}
-@keyframes splashAutoHide{to{opacity:0;visibility:hidden;pointer-events:none}}
+/* ===== SPLASH - BULLETPROOF ===== */
+#splash{position:fixed;inset:0;z-index:10000;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:1;visibility:visible;transition:opacity 0.6s ease,visibility 0.6s ease}
+#splash.hide{opacity:0;visibility:hidden;pointer-events:none}
 .splash-wrap{display:flex;flex-direction:column;align-items:center}
 .splash-logo-area{position:relative;overflow:hidden;padding:8px 20px}
 .splash-logo{font-family:var(--font-display);font-size:72px;font-weight:900;color:var(--white);letter-spacing:12px;animation:logoGlow 1.5s ease-in-out infinite}
@@ -76,9 +97,6 @@ img{max-width:100%;display:block}
 .load-bar-track{width:280px;height:3px;background:var(--elevated);border-radius:2px;overflow:hidden;margin-top:20px}
 .load-bar-fill{height:100%;background:linear-gradient(90deg,var(--red),#ff4466,var(--red));border-radius:2px;animation:loadProgress 2.3s ease-in-out forwards}
 @keyframes loadProgress{0%{width:0%}25%{width:30%}50%{width:55%}75%{width:80%}100%{width:100%}}
-
-/* ===== BODY CONTENT: always visible, splash covers it ===== */
-header,.hero,.main-layout,footer{opacity:1}
 
 /* ===== NAVBAR ===== */
 header{position:sticky;top:0;z-index:1000;background:rgba(11,11,11,0.8);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,0.06);padding:0 32px;height:64px;display:flex;align-items:center;justify-content:space-between}
@@ -364,7 +382,7 @@ footer .f-stats .stat strong{color:var(--white);font-family:var(--font-display)}
       </div>
       <div class="sidebar-body" id="mistral-body">
         <div class="mp-chat">
-          <div class="mp-msg" id="mistral-msg">Click on any channel and I will suggest similar content.</div>
+          <div class="mp-msg" id="mistral-msg">Ask me about channels! I can recommend similar content.</div>
           <div class="mp-input-wrap">
             <input class="mp-input" id="mistral-input" placeholder="Ask about channels...">
             <button class="mp-send" id="mistral-send"><i class="fas fa-paper-plane"></i></button>
@@ -413,93 +431,108 @@ footer .f-stats .stat strong{color:var(--white);font-family:var(--font-display)}
 </footer>
 
 <script>
-// ===== CRITICAL: Dismiss splash IMMEDIATELY, before any other scripts load =====
-function _dismissSplash(){try{var s=document.getElementById('splash');if(s&&!s.classList.contains('gone'))s.classList.add('gone');}catch(e){}}
-setTimeout(_dismissSplash,2500);
-setTimeout(_dismissSplash,4000);
-window.onerror=function(){_dismissSplash();return true;};
-</script>
-<script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.7" async><\/script>
+// ===== BULLETPROOF SPLASH DISMISS =====
+(function(){
+  function killSplash(){
+    var s=document.getElementById('splash');
+    if(s)s.classList.add('hide');
+  }
+  setTimeout(killSplash,2500);
+  setTimeout(killSplash,3500);
+  setTimeout(killSplash,5000);
+  document.addEventListener('DOMContentLoaded',function(){setTimeout(killSplash,1000);});
+  window.addEventListener('load',function(){setTimeout(killSplash,500);});
+  window.onerror=function(msg,url,line){
+    killSplash();
+    console.error('JS Error:',msg,url,line);
+    return true;
+  };
+})();
+<\/script>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.7"><\/script>
 <script>
+// ===== EDGE IPTV - Main Application =====
+(function(){
+'use strict';
 
-// ===== CHANNEL DATA =====
+// ===== CHANNEL DATA WITH ORIGINAL LOGOS =====
 var CHANNELS=[
-{id:1,n:"Al Jazeera English",s:"https://live-hls-apps-aje-fa.getaj.net/AJE/index.m3u8",c:"news",q:"1080p",src:"Al Jazeera",v:10492,d:"Global news from the Middle East",clr:"#fa9000",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/f/f2/Aljazeera_eng.svg/120px-Aljazeera_eng.svg.png"},
-{id:2,n:"Al Jazeera Arabic",s:"https://live-hls-apps-aja-fa.getaj.net/AJA/01.m3u8",c:"news",q:"1080p",src:"Al Jazeera",v:13631,d:"Arabic-language 24h news",clr:"#fa9000",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/f/f2/Aljazeera_eng.svg/120px-Aljazeera_eng.svg.png"},
-{id:3,n:"France 24 English",s:"https://live.france24.com/hls/live/2037218-b/F24_EN_HI_HLS/master_5000.m3u8",c:"news",q:"1080p",src:"France 24",v:12298,d:"International news from Paris",clr:"#0055a5",logo:"https://cdn.jsdelivr.net/gh/tv-logo/tv-logos@main/countries/international/france-24-english-int.png"},
-{id:4,n:"France 24 French",s:"https://live.france24.com/hls/live/2037179-b/F24_FR_HI_HLS/master_5000.m3u8",c:"news",q:"1080p",src:"France 24",v:14869,d:"Actualites en francais",clr:"#0055a5",logo:"https://cdn.jsdelivr.net/gh/tv-logo/tv-logos@main/countries/france/france-24-fr.png"},
-{id:5,n:"France 24 Arabic",s:"https://live.france24.com/hls/live/2037222-b/F24_AR_HI_HLS/master_5000.m3u8",c:"news",q:"1080p",src:"France 24",v:7713,d:"Arabic French news",clr:"#0055a5",logo:"https://cdn.jsdelivr.net/gh/tv-logo/tv-logos@main/countries/international/france-24-int.png"},
-{id:6,n:"DW English",s:"https://dwamdstream102.akamaized.net/hls/live/2015525/dwstream102/master.m3u8",c:"news",q:"1080p",src:"Deutsche Welle",v:6034,d:"Germany international broadcaster",clr:"#003399",logo:"https://cdn.jsdelivr.net/gh/tv-logo/tv-logos@main/countries/international/dw-english-int.png"},
-{id:7,n:"DW Spanish",s:"https://dwamdstream104.akamaized.net/hls/live/2015530/dwstream104/master.m3u8",c:"news",q:"1080p",src:"Deutsche Welle",v:793,d:"DW en espanol",clr:"#003399",logo:"https://cdn.jsdelivr.net/gh/tv-logo/tv-logos@main/countries/international/dw-int.png"},
-{id:8,n:"ABC News Live",s:"https://abc-news-dmd-streams-1.akamaized.net/out/v1/701126012d044971b3fa89406a440133/index.m3u8",c:"news",q:"720p",src:"ABC News",v:10380,d:"24/7 live news from ABC",clr:"#e4002b",logo:"https://cdn.jsdelivr.net/gh/tv-logo/tv-logos@main/countries/united-states/abc-news-live-us.png"},
-{id:9,n:"ABC News Stream 1",s:"https://abcnews-streams.akamaized.net/hls/live/2023560/abcnewshudson1/master_4000.m3u8",c:"news",q:"720p",src:"ABC News",v:8200,d:"ABC News live stream",clr:"#e4002b",logo:"https://cdn.jsdelivr.net/gh/tv-logo/tv-logos@main/countries/united-states/abc-news-us.png"},
-{id:10,n:"Africa 24",s:"https://africa24.vedge.infomaniak.com/livecast/ik:africa24/manifest.m3u8",c:"news",q:"1080p",src:"Infomaniak",v:2469,d:"Pan-African news",clr:"#007a3d",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/Africa_24_logo.svg/120px-Africa_24_logo.svg.png"},
+{id:1,n:"Al Jazeera English",s:"https://live-hls-apps-aje-fa.getaj.net/AJE/index.m3u8",c:"news",q:"1080p",src:"Al Jazeera",v:10492,d:"Global news from the Middle East",clr:"#fa9000",logo:"https://upload.wikimedia.org/wikipedia/en/thumb/f/f2/Aljazeera.svg/200px-Aljazeera.svg.png"},
+{id:2,n:"Al Jazeera Arabic",s:"https://live-hls-apps-aja-fa.getaj.net/AJA/01.m3u8",c:"news",q:"1080p",src:"Al Jazeera",v:13631,d:"Arabic-language 24h news",clr:"#fa9000",logo:"https://upload.wikimedia.org/wikipedia/en/thumb/f/f2/Aljazeera.svg/200px-Aljazeera.svg.png"},
+{id:3,n:"France 24 English",s:"https://live.france24.com/hls/live/2037218-b/F24_EN_HI_HLS/master_5000.m3u8",c:"news",q:"1080p",src:"France 24",v:12298,d:"International news from Paris",clr:"#0055a5",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/d/df/France_24_logo.svg/200px-France_24_logo.svg.png"},
+{id:4,n:"France 24 French",s:"https://live.france24.com/hls/live/2037179-b/F24_FR_HI_HLS/master_5000.m3u8",c:"news",q:"1080p",src:"France 24",v:14869,d:"Actualites en francais",clr:"#0055a5",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/d/df/France_24_logo.svg/200px-France_24_logo.svg.png"},
+{id:5,n:"France 24 Arabic",s:"https://live.france24.com/hls/live/2037222-b/F24_AR_HI_HLS/master_5000.m3u8",c:"news",q:"1080p",src:"France 24",v:7713,d:"Arabic French news",clr:"#0055a5",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/d/df/France_24_logo.svg/200px-France_24_logo.svg.png"},
+{id:6,n:"DW English",s:"https://dwamdstream102.akamaized.net/hls/live/2015525/dwstream102/master.m3u8",c:"news",q:"1080p",src:"Deutsche Welle",v:6034,d:"Germany international broadcaster",clr:"#003399",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/8/81/Deutsche_Welle_symbol_2012.svg/200px-Deutsche_Welle_symbol_2012.svg.png"},
+{id:7,n:"DW Spanish",s:"https://dwamdstream104.akamaized.net/hls/live/2015530/dwstream104/master.m3u8",c:"news",q:"1080p",src:"Deutsche Welle",v:793,d:"DW en espanol",clr:"#003399",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/8/81/Deutsche_Welle_symbol_2012.svg/200px-Deutsche_Welle_symbol_2012.svg.png"},
+{id:8,n:"ABC News Live",s:"https://abc-news-dmd-streams-1.akamaized.net/out/v1/701126012d044971b3fa89406a440133/index.m3u8",c:"news",q:"720p",src:"ABC News",v:10380,d:"24/7 live news from ABC",clr:"#e4002b",logo:"https://upload.wikimedia.org/wikipedia/en/thumb/2/2f/ABC_News_logo_2021.svg/200px-ABC_News_logo_2021.svg.png"},
+{id:9,n:"ABC News Stream 1",s:"https://abcnews-streams.akamaized.net/hls/live/2023560/abcnewshudson1/master_4000.m3u8",c:"news",q:"720p",src:"ABC News",v:8200,d:"ABC News live stream",clr:"#e4002b",logo:"https://upload.wikimedia.org/wikipedia/en/thumb/2/2f/ABC_News_logo_2021.svg/200px-ABC_News_logo_2021.svg.png"},
+{id:10,n:"Africa 24",s:"https://africa24.vedge.infomaniak.com/livecast/ik:africa24/manifest.m3u8",c:"news",q:"1080p",src:"Infomaniak",v:2469,d:"Pan-African news",clr:"#007a3d",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/Africa_24_logo.svg/200px-Africa_24_logo.svg.png"},
 {id:11,n:"Euronews English",s:"https://d35j504z0x2vu2.cloudfront.net/v1/master/0bc8e8376bd8417a1b6761138aa41c26c7309312/euronews/euronews-en.m3u8",c:"news",q:"720p",src:"Euronews",v:6721,d:"European world news",clr:"#003876",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/7/76/Euronews_2016_logo.svg/200px-Euronews_2016_logo.svg.png"},
-{id:12,n:"Court TV",s:"https://cdn-uw2-prod.tsv2.amagi.tv/linear/amg01438-ewscrippscompan-courttv-tablo/playlist.m3u8",c:"news",q:"1080p",src:"Stirr",v:13660,d:"Live trial coverage",clr:"#1a3a5c",logo:"https://cdn.jsdelivr.net/gh/tv-logo/tv-logos@main/countries/united-states/court-tv-us.png"},
-{id:13,n:"ACCDN",s:"https://raycom-accdn-firetv.amagi.tv/playlist.m3u8",c:"sports",q:"1080p",src:"Amagi",v:9995,d:"ACC Digital Network",clr:"#003087",logo:"https://cdn.jsdelivr.net/gh/tv-logo/tv-logos@main/countries/united-states/acc-network-us.png"},
-{id:14,n:"CBS Sports Golazo",s:"https://proped3fhg87.airspace-cdn.cbsivideo.com/golazo-live-dai/master/golazo-live-dai.m3u8",c:"sports",q:"720p",src:"CBS",v:8200,d:"24/7 soccer network",clr:"#0047ab",logo:"https://cdn.jsdelivr.net/gh/tv-logo/tv-logos@main/countries/united-states/cbs-sports-golazo-network-us.png"},
-{id:15,n:"FIFA+ English",s:"https://a62dad94.wurl.com/master/f36d25e7e52f1ba8d7e56eb859c636563214f541/UmFrdXRlblRWLWV1X0ZJRkFQbHVzRW5nbGlzaF9ITFM/playlist.m3u8",c:"sports",q:"720p",src:"FIFA+",v:7100,d:"FIFA content English",clr:"#326295",logo:"https://upload.wikimedia.org/wikipedia/en/thumb/5/50/FIFA%2B_logo.svg/120px-FIFA%2B_logo.svg.png"},
-{id:16,n:"FIFA+ Spanish",s:"https://6c849fb3.wurl.com/master/f36d25e7e52f1ba8d7e56eb859c636563214f541/TEctbXhfRklGQVBsdXNTcGFuaXNoLTFfS0xT/playlist.m3u8",c:"sports",q:"720p",src:"FIFA+",v:5200,d:"FIFA en espanol",clr:"#326295",logo:"https://upload.wikimedia.org/wikipedia/en/thumb/5/50/FIFA%2B_logo.svg/120px-FIFA%2B_logo.svg.png"},
-{id:17,n:"fubo Sports",s:"https://dnf08l6u6uxnz.cloudfront.net/master.m3u8",c:"sports",q:"1080p",src:"fuboTV",v:11400,d:"Free sports network",clr:"#6c2dc7",logo:"https://cdn.jsdelivr.net/gh/tv-logo/tv-logos@main/countries/united-states/fubo-sports-network-us.png"},
-{id:18,n:"Billiard TV",s:"https://1621590671.rsc.cdn77.org/HLS/BILLIARDTV.m3u8",c:"sports",q:"1080p",src:"CDN77",v:6314,d:"24/7 billiards",clr:"#1b5e20",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/7/74/Cue_sports_pictogram.svg/80px-Cue_sports_pictogram.svg.png"},
-{id:19,n:"FTF Sports",s:"https://1657061170.rsc.cdn77.org/HLS/FTF-LINEAR.m3u8",c:"sports",q:"720p",src:"CDN77",v:4400,d:"Football combat sports",clr:"#b71c1c",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/0/08/Football_pictogram.svg/80px-Football_pictogram.svg.png"},
-{id:20,n:"FanDuel Racing",s:"https://d3ehq1uaxory6w.cloudfront.net/out/v1/35c05f080f4e49a4b4eb031b5a14e505/TVG2index_2.m3u8",c:"sports",q:"720p",src:"FanDuel",v:3500,d:"Live horse racing",clr:"#1493ff",logo:"https://cdn.jsdelivr.net/gh/tv-logo/tv-logos@main/countries/united-states/fanduel-racing-us.png"},
-{id:21,n:"FanDuel TV",s:"https://d2jl8r92tdc3f1.cloudfront.net/out/v1/59419700344b4625b7cb0693ba265ea3/TVGindex_1.m3u8",c:"sports",q:"720p",src:"FanDuel",v:4100,d:"Sports betting analysis",clr:"#1493ff",logo:"https://cdn.jsdelivr.net/gh/tv-logo/tv-logos@main/countries/united-states/fanduel-tv-us.png"},
-{id:22,n:"DAZN Combat",s:"https://dazn-combat-rakuten.amagi.tv/hls/amagi_hls_data_rakutenAA-dazn-combat-rakuten/CDN/master.m3u8",c:"sports",q:"1080p",src:"Rakuten",v:8600,d:"Combat sports 24/7",clr:"#333",logo:"https://cdn.jsdelivr.net/gh/tv-logo/tv-logos@main/countries/united-states/dazn-us.png"},
-{id:23,n:"GLORY Kickboxing",s:"https://6f972d29.wurl.com/master/f36d25e7e52f1ba8d7e56eb859c636563214f541/UmFrdXRlblRWLWV1X0dsb3J5S2lja2JveGluZ19ITFM/playlist.m3u8",c:"sports",q:"720p",src:"Rakuten",v:3700,d:"World kickboxing",clr:"#dc143c",logo:"https://upload.wikimedia.org/wikipedia/en/thumb/8/8e/Glory_Logo.jpg/120px-Glory_Logo.jpg"},
-{id:24,n:"Speed Sport 1",s:"https://linear-599.frequency.stream/dist/stirr/599/hls/master/playlist.m3u8",c:"sports",q:"1080p",src:"Stirr",v:5400,d:"Motorsport racing",clr:"#ff6600",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/Auto_racing_pictogram.svg/80px-Auto_racing_pictogram.svg.png"},
-{id:25,n:"Artflix Classics",s:"https://amogonetworx-artflix-1-nl.samsung.wurl.tv/playlist.m3u8",c:"movies",q:"720p",src:"Samsung TV+",v:5800,d:"Classic cinema golden age",clr:"#8d6e63",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/0/0d/Samsung_TV_Plus_logo.svg/120px-Samsung_TV_Plus_logo.svg.png"},
-{id:26,n:"Alien Nation DUST",s:"https://dqi7ayt2o24fn.cloudfront.net/playlist.m3u8",c:"movies",q:"1080p",src:"DUST",v:2479,d:"Sci-fi short films",clr:"#4a148c",logo:"https://cdn.jsdelivr.net/gh/tv-logo/tv-logos@main/countries/united-states/dust-us.png"},
-{id:27,n:"70s Cinema",s:"https://jmp2.uk/plu-5f4d878d3d19b30007d2e782.m3u8",c:"movies",q:"720p",src:"Pluto TV",v:4100,d:"Classic 1970s movies",clr:"#bf360c",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/Pluto_TV_logo_2020.svg/120px-Pluto_TV_logo_2020.svg.png"},
-{id:28,n:"80s Rewind",s:"https://jmp2.uk/plu-5ca525b650be2571e3943c63.m3u8",c:"movies",q:"720p",src:"Pluto TV",v:6200,d:"Best of 1980s cinema",clr:"#e91e63",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/Pluto_TV_logo_2020.svg/120px-Pluto_TV_logo_2020.svg.png"},
-{id:29,n:"90s Throwback",s:"https://jmp2.uk/plu-5f4d86f519358a00072b978e.m3u8",c:"movies",q:"720p",src:"Pluto TV",v:5500,d:"90s movies marathon",clr:"#9c27b0",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/Pluto_TV_logo_2020.svg/120px-Pluto_TV_logo_2020.svg.png"},
-{id:30,n:"24h Free Movies",s:"https://d1b5mlajbmvkjv.cloudfront.net/v1/master/9d062541f2ff39b5c0f48b743c6411d25f62fc25/UDU-DistroTV/145.m3u8",c:"movies",q:"720p",src:"DistroTV",v:7800,d:"Free movies 24/7",clr:"#37474f",logo:"https://cdn.jsdelivr.net/gh/tv-logo/tv-logos@main/countries/united-states/distro-tv-us.png"},
-{id:31,n:"30A Classic Movies",s:"https://30a-tv.com/feeds/pzaz/30atvmovies.m3u8",c:"movies",q:"720p",src:"30A TV",v:3200,d:"Timeless movie classics",clr:"#3e2723",logo:"https://cdn.jsdelivr.net/gh/tv-logo/tv-logos@main/countries/united-states/30a-tv-us.png"},
-{id:32,n:"Rakuten Action",s:"https://284824cf70404fdfb6ddf9349009c710.mediatailor.eu-west-1.amazonaws.com/v1/master/0547f18649bd788bec7b67b746e47670f558b6b2/production-LiveChannel-6066/master.m3u8",c:"movies",q:"1080p",src:"Rakuten",v:12246,d:"Action movies 24/7",clr:"#d32f2f",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/f/f1/Rakuten_TV_logo.svg/120px-Rakuten_TV_logo.svg.png"},
-{id:33,n:"Rakuten Top UK",s:"https://0145451975a64b35866170fd2e8fa486.mediatailor.eu-west-1.amazonaws.com/v1/master/0547f18649bd788bec7b67b746e47670f558b6b2/production-LiveChannel-5987/master.m3u8",c:"movies",q:"1080p",src:"Rakuten",v:9466,d:"Top UK movies",clr:"#1565c0",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/f/f1/Rakuten_TV_logo.svg/120px-Rakuten_TV_logo.svg.png"},
-{id:34,n:"Charge! Action",s:"https://fast-channels.sinclairstoryline.com/CHARGE/index.m3u8",c:"movies",q:"1080p",src:"Sinclair",v:10663,d:"Action movies series",clr:"#c62828",logo:"https://cdn.jsdelivr.net/gh/tv-logo/tv-logos@main/countries/united-states/charge-us.png"},
-{id:35,n:"AMC Reality",s:"https://amc-absolutereality-1-us.plex.wurl.tv/playlist.m3u8",c:"entertainment",q:"720p",src:"Plex TV",v:7100,d:"Reality TV from AMC",clr:"#5d4037",logo:"https://cdn.jsdelivr.net/gh/tv-logo/tv-logos@main/countries/united-states/amc-us.png"},
-{id:36,n:"ALLBLK Gems",s:"https://df1zke3zj042m.cloudfront.net/playlist.m3u8",c:"entertainment",q:"720p",src:"ALLBLK",v:4200,d:"Black culture entertainment",clr:"#4a148c",logo:"https://cdn.jsdelivr.net/gh/tv-logo/tv-logos@main/countries/united-states/allblk-us.png"},
-{id:37,n:"Bounce XL",s:"https://cdn-uw2-prod.tsv2.amagi.tv/linear/amg01438-ewscrippscompan-bouncexl-tablo/playlist.m3u8",c:"entertainment",q:"1080p",src:"Stirr",v:6800,d:"African-American entertainment",clr:"#ff6f00",logo:"https://cdn.jsdelivr.net/gh/tv-logo/tv-logos@main/countries/united-states/bounce-us.png"},
-{id:38,n:"Buzzr Game Shows",s:"https://buzzrota-ono.amagi.tv/playlist.m3u8",c:"entertainment",q:"1080p",src:"Amagi",v:9100,d:"Classic game shows 24/7",clr:"#ff9800",logo:"https://cdn.jsdelivr.net/gh/tv-logo/tv-logos@main/countries/united-states/buzzr-us.png"},
-{id:39,n:"AsianCrush",s:"https://linear-900.frequency.stream/dist/cineverse/900/hls/master/playlist.m3u8",c:"entertainment",q:"1080p",src:"Frequency",v:5400,d:"Asian movies dramas",clr:"#e91e63",logo:"https://cdn.jsdelivr.net/gh/tv-logo/tv-logos@main/countries/united-states/asiancrush-us.png"},
-{id:40,n:"AfroLandTV",s:"https://alt-al.otteravision.com/alt/al/al.m3u8",c:"entertainment",q:"1080p",src:"AfroLand",v:3800,d:"African entertainment",clr:"#1b5e20",logo:"https://cdn.jsdelivr.net/gh/tv-logo/tv-logos@main/countries/international/afrolandtv-int.png"},
-{id:41,n:"30A Television",s:"https://30a-tv.com/feeds/masters/30atv.m3u8",c:"entertainment",q:"720p",src:"30A TV",v:2900,d:"Florida beach lifestyle",clr:"#00838f",logo:"https://cdn.jsdelivr.net/gh/tv-logo/tv-logos@main/countries/united-states/30a-tv-us.png"},
-{id:42,n:"Forensic Files",s:"https://jmp2.uk/plu-5bb1af6a268cae539bcedb0a.m3u8",c:"entertainment",q:"720p",src:"Pluto TV",v:8300,d:"Crime investigations",clr:"#455a64",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/Pluto_TV_logo_2020.svg/120px-Pluto_TV_logo_2020.svg.png"},
-{id:43,n:"CMC California",s:"https://cmc-ono.amagi.tv/playlist.m3u8",c:"music",q:"1080p",src:"Amagi",v:6126,d:"California Music Channel",clr:"#e91e63",logo:"https://cdn.jsdelivr.net/gh/tv-logo/tv-logos@main/countries/united-states/cmc-us.png"},
-{id:44,n:"30A Music",s:"https://30a-tv.com/music.m3u8",c:"music",q:"720p",src:"30A TV",v:2100,d:"Beach music vibes",clr:"#00bcd4",logo:"https://cdn.jsdelivr.net/gh/tv-logo/tv-logos@main/countries/united-states/30a-tv-us.png"},
-{id:45,n:"Dance Television",s:"https://m1b2.worldcast.tv/dancetelevisionone/dancetelevisionone.m3u8",c:"music",q:"1080p",src:"WorldCast",v:4300,d:"Electronic dance music",clr:"#7c4dff",logo:"https://cdn.jsdelivr.net/gh/tv-logo/tv-logos@main/countries/international/dancetelevision-int.png"},
-{id:46,n:"DanceTV EDM",s:"https://mbit1.worldcast.tv/dancetelevisionseven/multibit.m3u8",c:"music",q:"1080p",src:"WorldCast",v:3800,d:"Mainstage EDM live",clr:"#651fff",logo:"https://cdn.jsdelivr.net/gh/tv-logo/tv-logos@main/countries/international/dancetelevision-int.png"},
-{id:47,n:"DanceTV Techno",s:"https://m2b2.worldcast.tv:7443/dancetelevisionthree/dancetelevisionthree.m3u8",c:"music",q:"1080p",src:"WorldCast",v:2900,d:"Underground techno",clr:"#311b92",logo:"https://cdn.jsdelivr.net/gh/tv-logo/tv-logos@main/countries/international/dancetelevision-int.png"},
-{id:48,n:"Clubbing TV",s:"https://d1j2csarxnwazk.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-uze1m6xh4fiyr-ssai-prd/master.m3u8",c:"music",q:"720p",src:"Rakuten",v:5100,d:"Club DJ music",clr:"#9c27b0",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/f/f1/Rakuten_TV_logo.svg/120px-Rakuten_TV_logo.svg.png"},
-{id:49,n:"Stingray Rock",s:"https://lotus.stingray.com/manifest/ose-101ads-montreal/samsungtvplus/master.m3u8",c:"music",q:"1080p",src:"Samsung TV+",v:7200,d:"Classic rock hits",clr:"#f44336",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/9/98/Stingray_Music_logo.svg/120px-Stingray_Music_logo.svg.png"},
-{id:50,n:"Stingray Hit List",s:"https://lotus.stingray.com/manifest/ose-107ads-montreal/samsungtvplus/master.m3u8",c:"music",q:"1080p",src:"Samsung TV+",v:10903,d:"Today biggest hits",clr:"#ff5722",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/9/98/Stingray_Music_logo.svg/120px-Stingray_Music_logo.svg.png"},
-{id:51,n:"BBC Kids",s:"https://dmr1h4skdal9h.cloudfront.net/playlist.m3u8",c:"kids",q:"720p",src:"BBC",v:2721,d:"Children BBC programming",clr:"#00897b",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/4/41/CBBC_2016.svg/120px-CBBC_2016.svg.png"},
-{id:52,n:"Baby Shark TV",s:"https://newidco-babysharktv-1-us.roku.wurl.tv/playlist.m3u8",c:"kids",q:"1080p",src:"Roku",v:3477,d:"Baby Shark friends",clr:"#ff9800",logo:"https://upload.wikimedia.org/wikipedia/en/thumb/9/96/Baby_Shark%27s_Big_Show_logo.svg/120px-Baby_Shark%27s_Big_Show_logo.svg.png"},
-{id:53,n:"Brat TV",s:"https://streams2.sofast.tv/v1/master/611d79b11b77e2f571934fd80ca1413453772ac7/04072b68-dc6a-4d5e-98af-f356ba8d5063/playlist.m3u8",c:"kids",q:"720p",src:"SoFast",v:4398,d:"Gen Z entertainment",clr:"#e040fb",logo:"https://cdn.jsdelivr.net/gh/tv-logo/tv-logos@main/countries/united-states/brat-tv-us.png"},
-{id:54,n:"Camp Spoopy",s:"https://stream.ads.ottera.tv/playlist.m3u8?network_id=269",c:"kids",q:"576p",src:"Ottera",v:1800,d:"Spooky fun kids",clr:"#4a148c",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/8/8d/Ghost_pictogram.svg/80px-Ghost_pictogram.svg.png"},
-{id:55,n:"Avatar Pluto",s:"https://jmp2.uk/plu-600adbdf8c554e00072125c9.m3u8",c:"kids",q:"720p",src:"Pluto TV",v:6700,d:"Avatar Nickelodeon",clr:"#00897b",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/Pluto_TV_logo_2020.svg/120px-Pluto_TV_logo_2020.svg.png"},
-{id:56,n:"Anime Vision",s:"https://d1ujfw1zyymzyd.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-a6fukwkbxmex8/live/fast-channel-animevision-64527ec0/fast-channel-animevision-64527ec0.m3u8",c:"kids",q:"1080p",src:"Cineverse",v:3603,d:"Anime streaming 24/7",clr:"#e91e63",logo:"https://cdn.jsdelivr.net/gh/tv-logo/tv-logos@main/countries/united-states/anime-network-us.png"},
-{id:57,n:"Documentary+",s:"https://ef79b15c8c7c46c7a9de9d33001dbd07.mediatailor.us-west-2.amazonaws.com/v1/master/ba62fe743df0fe93366eba3a257d792884136c7f/LINEAR-859-DOCUMENTARYPLUS-DOCUMENTARYPLUS/mt/documentaryplus/859/hls/master/playlist.m3u8",c:"documentary",q:"1080p",src:"Amazon",v:7800,d:"Award-winning docs",clr:"#1b5e20",logo:"https://cdn.jsdelivr.net/gh/tv-logo/tv-logos@main/countries/united-states/documentary-plus-us.png"},
-{id:58,n:"Docurama",s:"https://docurama-plex-ingest.cinedigm.com/playlist.m3u8",c:"documentary",q:"1080p",src:"Plex TV",v:4600,d:"Curated documentary films",clr:"#0d47a1",logo:"https://cdn.jsdelivr.net/gh/tv-logo/tv-logos@main/countries/united-states/docurama-us.png"},
-{id:59,n:"DangerTV",s:"https://dk0n7jh428tzj.cloudfront.net/v1/dangertv/samsungheadend_us/latest/main/hls/playlist.m3u8",c:"documentary",q:"720p",src:"Samsung TV+",v:3200,d:"Extreme adventure",clr:"#b71c1c",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/0/0d/Samsung_TV_Plus_logo.svg/120px-Samsung_TV_Plus_logo.svg.png"},
-{id:60,n:"Curiosity NOW",s:"https://amg00170-amg00170c4-samsung-gb-4232.playouts.now.amagi.tv/playlist.m3u8",c:"documentary",q:"1080p",src:"Samsung TV+",v:5100,d:"Science nature docs",clr:"#0277bd",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/0/0d/Samsung_TV_Plus_logo.svg/120px-Samsung_TV_Plus_logo.svg.png"},
-{id:61,n:"4K Travel TV",s:"https://d35j504z0x2vu2.cloudfront.net/v1/master/0bc8e8376bd8417a1b6761138aa41c26c7309312/4k-travel-tv/manifest.m3u8",c:"documentary",q:"1080p",src:"DistroTV",v:4900,d:"Travel world in 4K",clr:"#00695c",logo:"https://cdn.jsdelivr.net/gh/tv-logo/tv-logos@main/countries/united-states/distro-tv-us.png"},
-{id:62,n:"5-Minute Craft",s:"https://soul-5mincrafteng-rakuten.amagi.tv/playlist.m3u8",c:"documentary",q:"1080p",src:"Rakuten",v:12145,d:"DIY craft videos",clr:"#ff6f00",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/f/f1/Rakuten_TV_logo.svg/120px-Rakuten_TV_logo.svg.png"},
-{id:63,n:"Bloomberg TV",s:"https://d35j504z0x2vu2.cloudfront.net/v1/master/0bc8e8376bd8417a1b6761138aa41c26c7309312/bloomberg-television/bloombergtv.m3u8",c:"international",q:"1080p",src:"Bloomberg",v:11414,d:"Global business finance",clr:"#5c068c",logo:"https://cdn.jsdelivr.net/gh/tv-logo/tv-logos@main/countries/united-states/bloomberg-television-us.png"},
-{id:64,n:"BBC Earth",s:"https://amg00793-amg00793c6-xumo-us-2669.playouts.now.amagi.tv/BBCStudios-BBCEarthA-hls/playlist.m3u8",c:"international",q:"1080p",src:"Xumo",v:10718,d:"Nature science BBC",clr:"#2e7d32",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/3/3c/BBC_Earth_2023.svg/120px-BBC_Earth_2023.svg.png"},
-{id:65,n:"BBC Top Gear",s:"https://amg00793-amg00793c5-xumo-us-2664.playouts.now.amagi.tv/bbcstudios-bbctopgear8min-all/playlist.m3u8",c:"international",q:"1080p",src:"Xumo",v:7734,d:"Top Gear highlights",clr:"#c62828",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/e/e3/TopGearLogo.svg/120px-TopGearLogo.svg.png"},
-{id:66,n:"Alhurra Iraq",s:"https://mbn-ingest-worldsafe.akamaized.net/hls/live/2038899/MBN_Iraq_Worldsafe_HLS/master.m3u8",c:"international",q:"720p",src:"MBN",v:3400,d:"Iraqi news programming",clr:"#1565c0",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/d/d5/AlHurra_logo.svg/120px-AlHurra_logo.svg.png"},
-{id:67,n:"ABC 5 St Paul",s:"https://amg01942-amg01942c2-stirr-us-10173.playouts.now.amagi.tv/playlist.m3u8",c:"international",q:"1080p",src:"Stirr",v:2200,d:"Local ABC Minneapolis",clr:"#e4002b",logo:"https://cdn.jsdelivr.net/gh/tv-logo/tv-logos@main/countries/united-states/abc-us.png"},
-{id:68,n:"AccuWeather NOW",s:"https://cdn-ue1-prod.tsv2.amagi.tv/linear/amg00684-accuweather-accuweather-plex/playlist.m3u8",c:"international",q:"1080p",src:"Plex TV",v:6100,d:"24/7 weather forecasts",clr:"#0277bd",logo:"https://cdn.jsdelivr.net/gh/tv-logo/tv-logos@main/countries/united-states/accuweather-us.png"},
-{id:69,n:"Al Jazeera Mubasher",s:"https://live-hls-apps-ajm-fa.getaj.net/AJM/index.m3u8",c:"news",q:"1080p",src:"Al Jazeera",v:7218,d:"Live events conferences",clr:"#fa9000",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/f/f2/Aljazeera_eng.svg/120px-Aljazeera_eng.svg.png"},
-{id:70,n:"France 24 Spanish",s:"https://live.france24.com/hls/live/2037220-b/F24_ES_HI_HLS/master_5000.m3u8",c:"news",q:"1080p",src:"France 24",v:9333,d:"Noticias en espanol",clr:"#0055a5",logo:"https://cdn.jsdelivr.net/gh/tv-logo/tv-logos@main/countries/international/france-24-int.png"},
-{id:71,n:"Africanews",s:"https://d35j504z0x2vu2.cloudfront.net/v1/master/0bc8e8376bd8417a1b6761138aa41c26c7309312/africanews/africanews-en.m3u8",c:"news",q:"720p",src:"Africanews",v:1800,d:"African news English",clr:"#007a3d",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/c/c8/Africanews_logo.svg/120px-Africanews_logo.svg.png"},
-{id:72,n:"America Voice News",s:"https://content.uplynk.com/channel/26bd482ffe364a1282bc3df28bd3c21f.m3u8",c:"news",q:"720p",src:"Uplynk",v:4100,d:"American news",clr:"#b71c1c",logo:"https://cdn.jsdelivr.net/gh/tv-logo/tv-logos@main/countries/united-states/abc-news-us.png"},
-{id:73,n:"ACI Sport TV",s:"https://webstream.multistream.it/memfs/e2cb3629-c1a2-495b-b43a-9eb386f04ed8.m3u8",c:"sports",q:"1080p",src:"Multistream",v:4057,d:"Italian motorsport",clr:"#009688",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/Auto_racing_pictogram.svg/80px-Auto_racing_pictogram.svg.png"},
-{id:74,n:"FITE 24/7",s:"https://d3d85c7qkywguj.cloudfront.net/scheduler/scheduleMaster/263.m3u8",c:"sports",q:"1080p",src:"FITE",v:5600,d:"Combat pro wrestling",clr:"#311b92",logo:"https://cdn.jsdelivr.net/gh/tv-logo/tv-logos@main/countries/united-states/fite-tv-us.png"},
-{id:75,n:"Sport Italia",s:"https://amg01370-italiansportcom-sportitalia-rakuten-3hmdb.amagi.tv/hls/amagi_hls_data_rakutenAA-sportitalia-rakuten/CDN/master.m3u8",c:"sports",q:"1080p",src:"Rakuten",v:6764,d:"Italian sports",clr:"#00897b",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/f/f1/Rakuten_TV_logo.svg/120px-Rakuten_TV_logo.svg.png"},
-{id:76,n:"Africa 24 Sport",s:"https://africa24.vedge.infomaniak.com/livecast/ik:africa24sport/manifest.m3u8",c:"sports",q:"1080p",src:"Infomaniak",v:2800,d:"African sports",clr:"#007a3d",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/Africa_24_logo.svg/120px-Africa_24_logo.svg.png"}
+{id:12,n:"Court TV",s:"https://cdn-uw2-prod.tsv2.amagi.tv/linear/amg01438-ewscrippscompan-courttv-tablo/playlist.m3u8",c:"news",q:"1080p",src:"Stirr",v:13660,d:"Live trial coverage",clr:"#1a3a5c",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/0/0c/Court_TV_2019.svg/200px-Court_TV_2019.svg.png"},
+{id:13,n:"ACCDN",s:"https://raycom-accdn-firetv.amagi.tv/playlist.m3u8",c:"sports",q:"1080p",src:"Amagi",v:9995,d:"ACC Digital Network",clr:"#003087",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/8/8c/ACC_Network_logo.svg/200px-ACC_Network_logo.svg.png"},
+{id:14,n:"CBS Sports Golazo",s:"https://proped3fhg87.airspace-cdn.cbsivideo.com/golazo-live-dai/master/golazo-live-dai.m3u8",c:"sports",q:"720p",src:"CBS",v:8200,d:"24/7 soccer network",clr:"#0047ab",logo:"https://upload.wikimedia.org/wikipedia/en/thumb/3/3a/CBS_Sports_Golazo_Network_logo.svg/200px-CBS_Sports_Golazo_Network_logo.svg.png"},
+{id:15,n:"FIFA+ English",s:"https://a62dad94.wurl.com/master/f36d25e7e52f1ba8d7e56eb859c636563214f541/UmFrdXRlblRWLWV1X0ZJRkFQbHVzRW5nbGlzaF9ITFM/playlist.m3u8",c:"sports",q:"720p",src:"FIFA+",v:7100,d:"FIFA content English",clr:"#326295",logo:"https://upload.wikimedia.org/wikipedia/en/thumb/5/50/FIFA%2B_logo.svg/200px-FIFA%2B_logo.svg.png"},
+{id:16,n:"FIFA+ Spanish",s:"https://6c849fb3.wurl.com/master/f36d25e7e52f1ba8d7e56eb859c636563214f541/TEctbXhfRklGQVBsdXNTcGFuaXNoLTFfS0xT/playlist.m3u8",c:"sports",q:"720p",src:"FIFA+",v:5200,d:"FIFA en espanol",clr:"#326295",logo:"https://upload.wikimedia.org/wikipedia/en/thumb/5/50/FIFA%2B_logo.svg/200px-FIFA%2B_logo.svg.png"},
+{id:17,n:"fubo Sports",s:"https://dnf08l6u6uxnz.cloudfront.net/master.m3u8",c:"sports",q:"1080p",src:"fuboTV",v:11400,d:"Free sports network",clr:"#6c2dc7",logo:"https://upload.wikimedia.org/wikipedia/en/thumb/8/8e/FuboTV.svg/200px-FuboTV.svg.png"},
+{id:18,n:"Billiard TV",s:"https://1621590671.rsc.cdn77.org/HLS/BILLIARDTV.m3u8",c:"sports",q:"1080p",src:"CDN77",v:6314,d:"24/7 billiards",clr:"#1b5e20",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/7/74/Cue_sports_pictogram.svg/120px-Cue_sports_pictogram.svg.png"},
+{id:19,n:"FTF Sports",s:"https://1657061170.rsc.cdn77.org/HLS/FTF-LINEAR.m3u8",c:"sports",q:"720p",src:"CDN77",v:4400,d:"Football combat sports",clr:"#b71c1c",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/0/08/Football_pictogram.svg/120px-Football_pictogram.svg.png"},
+{id:20,n:"FanDuel Racing",s:"https://d3ehq1uaxory6w.cloudfront.net/out/v1/35c05f080f4e49a4b4eb031b5a14e505/TVG2index_2.m3u8",c:"sports",q:"720p",src:"FanDuel",v:3500,d:"Live horse racing",clr:"#1493ff",logo:"https://upload.wikimedia.org/wikipedia/en/thumb/4/4c/FanDuel_logo.svg/200px-FanDuel_logo.svg.png"},
+{id:21,n:"FanDuel TV",s:"https://d2jl8r92tdc3f1.cloudfront.net/out/v1/59419700344b4625b7cb0693ba265ea3/TVGindex_1.m3u8",c:"sports",q:"720p",src:"FanDuel",v:4100,d:"Sports betting analysis",clr:"#1493ff",logo:"https://upload.wikimedia.org/wikipedia/en/thumb/4/4c/FanDuel_logo.svg/200px-FanDuel_logo.svg.png"},
+{id:22,n:"DAZN Combat",s:"https://dazn-combat-rakuten.amagi.tv/hls/amagi_hls_data_rakutenAA-dazn-combat-rakuten/CDN/master.m3u8",c:"sports",q:"1080p",src:"Rakuten",v:8600,d:"Combat sports 24/7",clr:"#333",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/3/3e/DAZN_logo.svg/200px-DAZN_logo.svg.png"},
+{id:23,n:"GLORY Kickboxing",s:"https://6f972d29.wurl.com/master/f36d25e7e52f1ba8d7e56eb859c636563214f541/UmFrdXRlblRWLWV1X0dsb3J5S2lja2JveGluZ19ITFM/playlist.m3u8",c:"sports",q:"720p",src:"Rakuten",v:3700,d:"World kickboxing",clr:"#dc143c",logo:"https://upload.wikimedia.org/wikipedia/en/thumb/8/8e/Glory_Logo.jpg/200px-Glory_Logo.jpg"},
+{id:24,n:"Speed Sport 1",s:"https://linear-599.frequency.stream/dist/stirr/599/hls/master/playlist.m3u8",c:"sports",q:"1080p",src:"Stirr",v:5400,d:"Motorsport racing",clr:"#ff6600",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/Auto_racing_pictogram.svg/120px-Auto_racing_pictogram.svg.png"},
+{id:25,n:"Artflix Classics",s:"https://amogonetworx-artflix-1-nl.samsung.wurl.tv/playlist.m3u8",c:"movies",q:"720p",src:"Samsung TV+",v:5800,d:"Classic cinema golden age",clr:"#8d6e63",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/0/0d/Samsung_TV_Plus_logo.svg/200px-Samsung_TV_Plus_logo.svg.png"},
+{id:26,n:"Alien Nation DUST",s:"https://dqi7ayt2o24fn.cloudfront.net/playlist.m3u8",c:"movies",q:"1080p",src:"DUST",v:2479,d:"Sci-fi short films",clr:"#4a148c",logo:"https://upload.wikimedia.org/wikipedia/en/thumb/0/0f/Dust_short_film_logo.svg/200px-Dust_short_film_logo.svg.png"},
+{id:27,n:"70s Cinema",s:"https://jmp2.uk/plu-5f4d878d3d19b30007d2e782.m3u8",c:"movies",q:"720p",src:"Pluto TV",v:4100,d:"Classic 1970s movies",clr:"#bf360c",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/Pluto_TV_logo_2020.svg/200px-Pluto_TV_logo_2020.svg.png"},
+{id:28,n:"80s Rewind",s:"https://jmp2.uk/plu-5ca525b650be2571e3943c63.m3u8",c:"movies",q:"720p",src:"Pluto TV",v:6200,d:"Best of 1980s cinema",clr:"#e91e63",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/Pluto_TV_logo_2020.svg/200px-Pluto_TV_logo_2020.svg.png"},
+{id:29,n:"90s Throwback",s:"https://jmp2.uk/plu-5f4d86f519358a00072b978e.m3u8",c:"movies",q:"720p",src:"Pluto TV",v:5500,d:"90s movies marathon",clr:"#9c27b0",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/Pluto_TV_logo_2020.svg/200px-Pluto_TV_logo_2020.svg.png"},
+{id:30,n:"24h Free Movies",s:"https://d1b5mlajbmvkjv.cloudfront.net/v1/master/9d062541f2ff39b5c0f48b743c6411d25f62fc25/UDU-DistroTV/145.m3u8",c:"movies",q:"720p",src:"DistroTV",v:7800,d:"Free movies 24/7",clr:"#37474f",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Distro_TV_logo.svg/200px-Distro_TV_logo.svg.png"},
+{id:31,n:"30A Classic Movies",s:"https://30a-tv.com/feeds/pzaz/30atvmovies.m3u8",c:"movies",q:"720p",src:"30A TV",v:3200,d:"Timeless movie classics",clr:"#3e2723",logo:"https://upload.wikimedia.org/wikipedia/en/thumb/8/85/30A_Entertainment_logo.svg/200px-30A_Entertainment_logo.svg.png"},
+{id:32,n:"Rakuten Action",s:"https://284824cf70404fdfb6ddf9349009c710.mediatailor.eu-west-1.amazonaws.com/v1/master/0547f18649bd788bec7b67b746e47670f558b6b2/production-LiveChannel-6066/master.m3u8",c:"movies",q:"1080p",src:"Rakuten",v:12246,d:"Action movies 24/7",clr:"#d32f2f",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/f/f1/Rakuten_TV_logo.svg/200px-Rakuten_TV_logo.svg.png"},
+{id:33,n:"Rakuten Top UK",s:"https://0145451975a64b35866170fd2e8fa486.mediatailor.eu-west-1.amazonaws.com/v1/master/0547f18649bd788bec7b67b746e47670f558b6b2/production-LiveChannel-5987/master.m3u8",c:"movies",q:"1080p",src:"Rakuten",v:9466,d:"Top UK movies",clr:"#1565c0",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/f/f1/Rakuten_TV_logo.svg/200px-Rakuten_TV_logo.svg.png"},
+{id:34,n:"Charge! Action",s:"https://fast-channels.sinclairstoryline.com/CHARGE/index.m3u8",c:"movies",q:"1080p",src:"Sinclair",v:10663,d:"Action movies series",clr:"#c62828",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/3/3c/Charge%21_TV_logo.svg/200px-Charge%21_TV_logo.svg.png"},
+{id:35,n:"AMC Reality",s:"https://amc-absolutereality-1-us.plex.wurl.tv/playlist.m3u8",c:"entertainment",q:"720p",src:"Plex TV",v:7100,d:"Reality TV from AMC",clr:"#5d4037",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/1/1c/AMC_Networks_2024.svg/200px-AMC_Networks_2024.svg.png"},
+{id:36,n:"ALLBLK Gems",s:"https://df1zke3zj042m.cloudfront.net/playlist.m3u8",c:"entertainment",q:"720p",src:"ALLBLK",v:4200,d:"Black culture entertainment",clr:"#4a148c",logo:"https://upload.wikimedia.org/wikipedia/en/thumb/0/05/ALLBLK_logo.svg/200px-ALLBLK_logo.svg.png"},
+{id:37,n:"Bounce XL",s:"https://cdn-uw2-prod.tsv2.amagi.tv/linear/amg01438-ewscrippscompan-bouncexl-tablo/playlist.m3u8",c:"entertainment",q:"1080p",src:"Stirr",v:6800,d:"African-American entertainment",clr:"#ff6f00",logo:"https://upload.wikimedia.org/wikipedia/en/thumb/2/29/Bounce_TV_logo.svg/200px-Bounce_TV_logo.svg.png"},
+{id:38,n:"Buzzr Game Shows",s:"https://buzzrota-ono.amagi.tv/playlist.m3u8",c:"entertainment",q:"1080p",src:"Amagi",v:9100,d:"Classic game shows 24/7",clr:"#ff9800",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Buzzr_logo.svg/200px-Buzzr_logo.svg.png"},
+{id:39,n:"AsianCrush",s:"https://linear-900.frequency.stream/dist/cineverse/900/hls/master/playlist.m3u8",c:"entertainment",q:"1080p",src:"Frequency",v:5400,d:"Asian movies dramas",clr:"#e91e63",logo:"https://upload.wikimedia.org/wikipedia/en/thumb/9/9f/AsianCrush_logo.svg/200px-AsianCrush_logo.svg.png"},
+{id:40,n:"AfroLandTV",s:"https://alt-al.otteravision.com/alt/al/al.m3u8",c:"entertainment",q:"1080p",src:"AfroLand",v:3800,d:"African entertainment",clr:"#1b5e20",logo:"https://upload.wikimedia.org/wikipedia/en/thumb/7/70/AfroLandTV_logo.svg/200px-AfroLandTV_logo.svg.png"},
+{id:41,n:"30A Television",s:"https://30a-tv.com/feeds/masters/30atv.m3u8",c:"entertainment",q:"720p",src:"30A TV",v:2900,d:"Florida beach lifestyle",clr:"#00838f",logo:"https://upload.wikimedia.org/wikipedia/en/thumb/8/85/30A_Entertainment_logo.svg/200px-30A_Entertainment_logo.svg.png"},
+{id:42,n:"Forensic Files",s:"https://jmp2.uk/plu-5bb1af6a268cae539bcedb0a.m3u8",c:"entertainment",q:"720p",src:"Pluto TV",v:8300,d:"Crime investigations",clr:"#455a64",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/Pluto_TV_logo_2020.svg/200px-Pluto_TV_logo_2020.svg.png"},
+{id:43,n:"CMC California",s:"https://cmc-ono.amagi.tv/playlist.m3u8",c:"music",q:"1080p",src:"Amagi",v:6126,d:"California Music Channel",clr:"#e91e63",logo:"https://upload.wikimedia.org/wikipedia/en/thumb/e/ef/CMC_Music_Channel_logo.svg/200px-CMC_Music_Channel_logo.svg.png"},
+{id:44,n:"30A Music",s:"https://30a-tv.com/music.m3u8",c:"music",q:"720p",src:"30A TV",v:2100,d:"Beach music vibes",clr:"#00bcd4",logo:"https://upload.wikimedia.org/wikipedia/en/thumb/8/85/30A_Entertainment_logo.svg/200px-30A_Entertainment_logo.svg.png"},
+{id:45,n:"Dance Television",s:"https://m1b2.worldcast.tv/dancetelevisionone/dancetelevisionone.m3u8",c:"music",q:"1080p",src:"WorldCast",v:4300,d:"Electronic dance music",clr:"#7c4dff",logo:"https://upload.wikimedia.org/wikipedia/en/thumb/b/b7/Dance_Television_logo.png/200px-Dance_Television_logo.png"},
+{id:46,n:"DanceTV EDM",s:"https://mbit1.worldcast.tv/dancetelevisionseven/multibit.m3u8",c:"music",q:"1080p",src:"WorldCast",v:3800,d:"Mainstage EDM live",clr:"#651fff",logo:"https://upload.wikimedia.org/wikipedia/en/thumb/b/b7/Dance_Television_logo.png/200px-Dance_Television_logo.png"},
+{id:47,n:"DanceTV Techno",s:"https://m2b2.worldcast.tv:7443/dancetelevisionthree/dancetelevisionthree.m3u8",c:"music",q:"1080p",src:"WorldCast",v:2900,d:"Underground techno",clr:"#311b92",logo:"https://upload.wikimedia.org/wikipedia/en/thumb/b/b7/Dance_Television_logo.png/200px-Dance_Television_logo.png"},
+{id:48,n:"Clubbing TV",s:"https://d1j2csarxnwazk.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-uze1m6xh4fiyr-ssai-prd/master.m3u8",c:"music",q:"720p",src:"Rakuten",logo:"https://upload.wikimedia.org/wikipedia/en/thumb/a/a2/Clubbing_TV_logo.svg/200px-Clubbing_TV_logo.svg.png",v:5100,d:"Club DJ music",clr:"#9c27b0"},
+{id:49,n:"Stingray Rock",s:"https://lotus.stingray.com/manifest/ose-101ads-montreal/samsungtvplus/master.m3u8",c:"music",q:"1080p",src:"Samsung TV+",v:7200,d:"Classic rock hits",clr:"#f44336",logo:"https://upload.wikimedia.org/wikipedia/en/thumb/9/98/Stingray_Music_logo.svg/200px-Stingray_Music_logo.svg.png"},
+{id:50,n:"Stingray Hit List",s:"https://lotus.stingray.com/manifest/ose-107ads-montreal/samsungtvplus/master.m3u8",c:"music",q:"1080p",src:"Samsung TV+",v:10903,d:"Today biggest hits",clr:"#ff5722",logo:"https://upload.wikimedia.org/wikipedia/en/thumb/9/98/Stingray_Music_logo.svg/200px-Stingray_Music_logo.svg.png"},
+{id:51,n:"BBC Kids",s:"https://dmr1h4skdal9h.cloudfront.net/playlist.m3u8",c:"kids",q:"720p",src:"BBC",v:2721,d:"Children BBC programming",clr:"#00897b",logo:"https://upload.wikimedia.org/wikipedia/en/thumb/4/41/CBBC_2016.svg/200px-CBBC_2016.svg.png"},
+{id:52,n:"Baby Shark TV",s:"https://newidco-babysharktv-1-us.roku.wurl.tv/playlist.m3u8",c:"kids",q:"1080p",src:"Roku",v:3477,d:"Baby Shark friends",clr:"#ff9800",logo:"https://upload.wikimedia.org/wikipedia/en/thumb/9/96/Baby_Shark%27s_Big_Show_logo.svg/200px-Baby_Shark%27s_Big_Show_logo.svg.png"},
+{id:53,n:"Brat TV",s:"https://streams2.sofast.tv/v1/master/611d79b11b77e2f571934fd80ca1413453772ac7/04072b68-dc6a-4d5e-98af-f356ba8d5063/playlist.m3u8",c:"kids",q:"720p",src:"SoFast",v:4398,d:"Gen Z entertainment",clr:"#e040fb",logo:"https://upload.wikimedia.org/wikipedia/en/thumb/d/d4/Brat_TV_logo.svg/200px-Brat_TV_logo.svg.png"},
+{id:54,n:"Camp Spoopy",s:"https://stream.ads.ottera.tv/playlist.m3u8?network_id=269",c:"kids",q:"576p",src:"Ottera",v:1800,d:"Spooky fun kids",clr:"#4a148c",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/8/8d/Ghost_pictogram.svg/120px-Ghost_pictogram.svg.png"},
+{id:55,n:"Avatar Pluto",s:"https://jmp2.uk/plu-600adbdf8c554e00072125c9.m3u8",c:"kids",q:"720p",src:"Pluto TV",v:6700,d:"Avatar Nickelodeon",clr:"#00897b",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/Pluto_TV_logo_2020.svg/200px-Pluto_TV_logo_2020.svg.png"},
+{id:56,n:"Anime Vision",s:"https://d1ujfw1zyymzyd.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-a6fukwkbxmex8/live/fast-channel-animevision-64527ec0/fast-channel-animevision-64527ec0.m3u8",c:"kids",q:"1080p",src:"Cineverse",v:3603,d:"Anime streaming 24/7",clr:"#e91e63",logo:"https://upload.wikimedia.org/wikipedia/en/thumb/9/9e/Anime_Network_logo.svg/200px-Anime_Network_logo.svg.png"},
+{id:57,n:"Documentary+",s:"https://ef79b15c8c7c46c7a9de9d33001dbd07.mediatailor.us-west-2.amazonaws.com/v1/master/ba62fe743df0fe93366eba3a257d792884136c7f/LINEAR-859-DOCUMENTARYPLUS-DOCUMENTARYPLUS/mt/documentaryplus/859/hls/master/playlist.m3u8",c:"documentary",q:"1080p",src:"Amazon",v:7800,d:"Award-winning docs",clr:"#1b5e20",logo:"https://upload.wikimedia.org/wikipedia/en/thumb/9/9a/Documentary%2B_logo.svg/200px-Documentary%2B_logo.svg.png"},
+{id:58,n:"Docurama",s:"https://docurama-plex-ingest.cinedigm.com/playlist.m3u8",c:"documentary",q:"1080p",src:"Plex TV",v:4600,d:"Curated documentary films",clr:"#0d47a1",logo:"https://upload.wikimedia.org/wikipedia/en/thumb/5/5e/Docurama_logo.svg/200px-Docurama_logo.svg.png"},
+{id:59,n:"DangerTV",s:"https://dk0n7jh428tzj.cloudfront.net/v1/dangertv/samsungheadend_us/latest/main/hls/playlist.m3u8",c:"documentary",q:"720p",src:"Samsung TV+",v:3200,d:"Extreme adventure",clr:"#b71c1c",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/0/0d/Samsung_TV_Plus_logo.svg/200px-Samsung_TV_Plus_logo.svg.png"},
+{id:60,n:"Curiosity NOW",s:"https://amg00170-amg00170c4-samsung-gb-4232.playouts.now.amagi.tv/playlist.m3u8",c:"documentary",q:"1080p",src:"Samsung TV+",v:5100,d:"Science nature docs",clr:"#0277bd",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/0/0d/Samsung_TV_Plus_logo.svg/200px-Samsung_TV_Plus_logo.svg.png"},
+{id:61,n:"4K Travel TV",s:"https://d35j504z0x2vu2.cloudfront.net/v1/master/0bc8e8376bd8417a1b6761138aa41c26c7309312/4k-travel-tv/manifest.m3u8",c:"documentary",q:"1080p",src:"DistroTV",v:4900,d:"Travel world in 4K",clr:"#00695c",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Distro_TV_logo.svg/200px-Distro_TV_logo.svg.png"},
+{id:62,n:"5-Minute Craft",s:"https://soul-5mincrafteng-rakuten.amagi.tv/playlist.m3u8",c:"documentary",q:"1080p",src:"Rakuten",v:12145,d:"DIY craft videos",clr:"#ff6f00",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/f/f1/Rakuten_TV_logo.svg/200px-Rakuten_TV_logo.svg.png"},
+{id:63,n:"Bloomberg TV",s:"https://d35j504z0x2vu2.cloudfront.net/v1/master/0bc8e8376bd8417a1b6761138aa41c26c7309312/bloomberg-television/bloombergtv.m3u8",c:"international",q:"1080p",src:"Bloomberg",v:11414,d:"Global business finance",clr:"#5c068c",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/Bloomberg_L.P._Logo.svg/200px-Bloomberg_L.P._Logo.svg.png"},
+{id:64,n:"BBC Earth",s:"https://amg00793-amg00793c6-xumo-us-2669.playouts.now.amagi.tv/BBCStudios-BBCEarthA-hls/playlist.m3u8",c:"international",q:"1080p",src:"Xumo",v:10718,d:"Nature science BBC",clr:"#2e7d32",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/3/3c/BBC_Earth_2023.svg/200px-BBC_Earth_2023.svg.png"},
+{id:65,n:"BBC Top Gear",s:"https://amg00793-amg00793c5-xumo-us-2664.playouts.now.amagi.tv/bbcstudios-bbctopgear8min-all/playlist.m3u8",c:"international",q:"1080p",src:"Xumo",v:7734,d:"Top Gear highlights",clr:"#c62828",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/e/e3/TopGearLogo.svg/200px-TopGearLogo.svg.png"},
+{id:66,n:"Alhurra Iraq",s:"https://mbn-ingest-worldsafe.akamaized.net/hls/live/2038899/MBN_Iraq_Worldsafe_HLS/master.m3u8",c:"international",q:"720p",src:"MBN",v:3400,d:"Iraqi news programming",clr:"#1565c0",logo:"https://upload.wikimedia.org/wikipedia/en/thumb/5/5e/Alhurra_TV_logo.svg/200px-Alhurra_TV_logo.svg.png"},
+{id:67,n:"ABC 5 St Paul",s:"https://amg01942-amg01942c2-stirr-us-10173.playouts.now.amagi.tv/playlist.m3u8",c:"international",q:"1080p",src:"Stirr",v:2200,d:"Local ABC Minneapolis",clr:"#e4002b",logo:"https://upload.wikimedia.org/wikipedia/en/thumb/2/2f/ABC_News_logo_2021.svg/200px-ABC_News_logo_2021.svg.png"},
+{id:68,n:"AccuWeather NOW",s:"https://cdn-ue1-prod.tsv2.amagi.tv/linear/amg00684-accuweather-accuweather-plex/playlist.m3u8",c:"international",q:"1080p",src:"Plex TV",v:6100,d:"24/7 weather forecasts",clr:"#0277bd",logo:"https://upload.wikimedia.org/wikipedia/en/thumb/d/d3/AccuWeather_logo.svg/200px-AccuWeather_logo.svg.png"},
+{id:69,n:"Al Jazeera Mubasher",s:"https://live-hls-apps-ajm-fa.getaj.net/AJM/index.m3u8",c:"news",q:"1080p",src:"Al Jazeera",v:7218,d:"Live events conferences",clr:"#fa9000",logo:"https://upload.wikimedia.org/wikipedia/en/thumb/f/f2/Aljazeera.svg/200px-Aljazeera.svg.png"},
+{id:70,n:"France 24 Spanish",s:"https://live.france24.com/hls/live/2037220-b/F24_ES_HI_HLS/master_5000.m3u8",c:"news",q:"1080p",src:"France 24",v:9333,d:"Noticias en espanol",clr:"#0055a5",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/d/df/France_24_logo.svg/200px-France_24_logo.svg.png"},
+{id:71,n:"Africanews",s:"https://d35j504z0x2vu2.cloudfront.net/v1/master/0bc8e8376bd8417a1b6761138aa41c26c7309312/africanews/africanews-en.m3u8",c:"news",q:"720p",src:"Africanews",v:1800,d:"African news English",clr:"#007a3d",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/c/c8/Africanews_logo.svg/200px-Africanews_logo.svg.png"},
+{id:72,n:"America Voice News",s:"https://content.uplynk.com/channel/26bd482ffe364a1282bc3df28bd3c21f.m3u8",c:"news",q:"720p",src:"Uplynk",v:4100,d:"American news",clr:"#b71c1c",logo:"https://upload.wikimedia.org/wikipedia/en/thumb/2/2f/ABC_News_logo_2021.svg/200px-ABC_News_logo_2021.svg.png"},
+{id:73,n:"ACI Sport TV",s:"https://webstream.multistream.it/memfs/e2cb3629-c1a2-495b-b43a-9eb386f04ed8.m3u8",c:"sports",q:"1080p",src:"Multistream",v:4057,d:"Italian motorsport",clr:"#009688",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/Auto_racing_pictogram.svg/120px-Auto_racing_pictogram.svg.png"},
+{id:74,n:"FITE 24/7",s:"https://d3d85c7qkywguj.cloudfront.net/scheduler/scheduleMaster/263.m3u8",c:"sports",q:"1080p",src:"FITE",v:5600,d:"Combat pro wrestling",clr:"#311b92",logo:"https://upload.wikimedia.org/wikipedia/en/thumb/e/e8/FITE_logo.svg/200px-FITE_logo.svg.png"},
+{id:75,n:"Sport Italia",s:"https://amg01370-italiansportcom-sportitalia-rakuten-3hmdb.amagi.tv/hls/amagi_hls_data_rakutenAA-sportitalia-rakuten/CDN/master.m3u8",c:"sports",q:"1080p",src:"Rakuten",v:6764,d:"Italian sports",clr:"#00897b",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/f/f1/Rakuten_TV_logo.svg/200px-Rakuten_TV_logo.svg.png"},
+{id:76,n:"Africa 24 Sport",s:"https://africa24.vedge.infomaniak.com/livecast/ik:africa24sport/manifest.m3u8",c:"sports",q:"1080p",src:"Infomaniak",v:2800,d:"African sports",clr:"#007a3d",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/Africa_24_logo.svg/200px-Africa_24_logo.svg.png"}
 ];
 
 var CATS=[
@@ -513,7 +546,7 @@ var CATS=[
 {id:"documentary",label:"Docs",icon:"fa-book"},
 {id:"international",label:"World",icon:"fa-earth-americas"}
 ];
-// Logo references removed - using CSS gradients with channel colors instead
+
 var CAT_GRAD={
 news:'linear-gradient(135deg,#1a237e 0%,#0d47a1 50%,#01579b 100%)',
 sports:'linear-gradient(135deg,#1b5e20 0%,#2e7d32 50%,#388e3c 100%)',
@@ -525,23 +558,24 @@ documentary:'linear-gradient(135deg,#263238 0%,#37474f 50%,#455a64 100%)',
 international:'linear-gradient(135deg,#004d40 0%,#00695c 50%,#00796b 100%)'
 };
 var CAT_ICON={
-news:'fa-newspaper',
-sports:'fa-futbol',
-movies:'fa-film',
-entertainment:'fa-star',
-music:'fa-music',
-kids:'fa-child',
-documentary:'fa-book-open',
-international:'fa-earth-americas'
+news:'fa-newspaper',sports:'fa-futbol',movies:'fa-film',entertainment:'fa-star',
+music:'fa-music',kids:'fa-child',documentary:'fa-book-open',international:'fa-earth-americas'
 };
 
-// ===== AUDIO SYSTEM =====
+// ===== STATE =====
+var curFilter='all',curCh=null,hlsInst=null,heroIdx=0,heroIv=null;
+var retryCount=0,MAX_RETRIES=3,playerRetryTimer=null;
 var audioCtx=null;
-var soundEnabled=(function(){try{return localStorage.getItem('edge-sound')!=='off';}catch(e){return true;}})();
+var soundEnabled=true;
+try{soundEnabled=localStorage.getItem('edge-sound')!=='off';}catch(e){}
 
-function initAudio(){
-  try{audioCtx=new(window.AudioContext||window.webkitAudioContext)();if(soundEnabled)playBlip();}catch(e){}
-}
+// ===== UTILITIES =====
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function fmtV(v){if(v>=1000)return (v/1000).toFixed(1)+'K';return v.toString();}
+function catLabel(c){for(var i=0;i<CATS.length;i++){if(CATS[i].id===c)return CATS[i].label;}return c;}
+
+// ===== AUDIO =====
+function initAudio(){try{audioCtx=new(window.AudioContext||window.webkitAudioContext)();}catch(e){}}
 function playBlip(){
   if(!audioCtx||!soundEnabled)return;
   try{var o=audioCtx.createOscillator(),g=audioCtx.createGain();o.connect(g);g.connect(audioCtx.destination);o.type='sine';o.frequency.setValueAtTime(880,audioCtx.currentTime);o.frequency.exponentialRampToValueAtTime(440,audioCtx.currentTime+0.1);g.gain.setValueAtTime(0.08,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+0.1);o.start(audioCtx.currentTime);o.stop(audioCtx.currentTime+0.1);}catch(e){}
@@ -550,42 +584,21 @@ function playClick(){
   if(!audioCtx||!soundEnabled)return;
   try{var o=audioCtx.createOscillator(),g=audioCtx.createGain();o.connect(g);g.connect(audioCtx.destination);o.type='sine';o.frequency.setValueAtTime(1200,audioCtx.currentTime);o.frequency.exponentialRampToValueAtTime(600,audioCtx.currentTime+0.05);g.gain.setValueAtTime(0.03,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+0.05);o.start(audioCtx.currentTime);o.stop(audioCtx.currentTime+0.05);}catch(e){}
 }
-
-// Initialize audio on first user interaction
 document.addEventListener('click',function onFirstClick(){
   if(!audioCtx)initAudio();
   document.removeEventListener('click',onFirstClick);
 },{once:true});
 
-// ===== STATE =====
-var curFilter='all',curCh=null,hlsInst=null,heroIdx=0,heroIv=null;
-var retryCount=0,MAX_RETRIES=3,playerRetryTimer=null;
-
-// ===== INIT APP (runs immediately, splash already covered by CSS auto-hide + early script) =====
-try{initApp();}catch(e){console.error('initApp error:',e);}
-_dismissSplash();
-
-// ===== CORE INIT =====
-function initApp(){
-  renderCats();
-  renderSkeletons();
-  setTimeout(function(){renderGrid();setupLazyLoad();},150);
-  renderHero();
-  startHero();
-  renderSidebar();
-  renderUpcoming();
-  bindAll();
-  updateStats();
+// ===== DISMISS SPLASH HELPER =====
+function killSplash(){
+  var s=document.getElementById('splash');
+  if(s)s.classList.add('hide');
 }
-
-// ===== UTILITIES =====
-function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-function fmtV(v){if(v>=1000)return (v/1000).toFixed(1)+'K';return v.toString();}
-function catLabel(c){for(var i=0;i<CATS.length;i++){if(CATS[i].id===c)return CATS[i].label;}return c;}
 
 // ===== RENDER CATEGORIES =====
 function renderCats(){
   var el=document.getElementById('cat-filter');
+  if(!el)return;
   var h='';
   for(var i=0;i<CATS.length;i++){
     var c=CATS[i];
@@ -598,6 +611,7 @@ function renderCats(){
 // ===== RENDER SKELETONS =====
 function renderSkeletons(){
   var grid=document.getElementById('channels-grid');
+  if(!grid)return;
   var h='';
   for(var i=0;i<12;i++){
     h+='<div class="skeleton-card"><div class="skeleton-thumb"></div><div class="skeleton-body"><div class="skeleton-line"></div><div class="skeleton-line short"></div></div></div>';
@@ -608,20 +622,24 @@ function renderSkeletons(){
 // ===== RENDER CHANNEL GRID =====
 function renderGrid(){
   var grid=document.getElementById('channels-grid');
+  if(!grid)return;
   var list=curFilter==='all'?CHANNELS:CHANNELS.filter(function(ch){return ch.c===curFilter;});
-  document.getElementById('ch-count').textContent=list.length+' channels';
+  var countEl=document.getElementById('ch-count');
+  if(countEl)countEl.textContent=list.length+' channels';
   if(!list.length){grid.innerHTML='<div style="text-align:center;padding:40px;color:var(--muted)">No channels found</div>';return;}
   var h='';
   for(var i=0;i<list.length;i++){
     var ch=list[i];
     var catGrad=CAT_GRAD[ch.c]||CAT_GRAD.news;
     var catIcon=CAT_ICON[ch.c]||'fa-tv';
+    var logoHtml=ch.logo?'<img class="ch-logo" src="'+ch.logo+'" alt="'+esc(ch.n)+'" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\';">':'';
+    var iconStyle=ch.logo?'style="display:none"':'';
     h+='<div class="ch-card" data-id="'+ch.id+'">'+
       '<div class="ch-thumb">'+
         '<div class="ch-thumb-img" style="background:'+catGrad+'"></div>'+
         '<div class="ch-thumb-overlay"></div>'+
-        (ch.logo?'<img class="ch-logo" src="'+ch.logo+'" alt="'+esc(ch.n)+'" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\';">':'')+
-        '<div class="ch-thumb-icon" '+(ch.logo?'style="display:none"':'')+'><i class="fas '+catIcon+'"></i></div>'+
+        logoHtml+
+        '<div class="ch-thumb-icon" '+iconStyle+'><i class="fas '+catIcon+'"></i></div>'+
         '<div class="ch-thumb-label">'+esc(ch.n)+'</div>'+
         '<div class="ch-thumb-src">'+esc(ch.src)+'</div>'+
         '<span class="live-badge">LIVE</span>'+
@@ -638,7 +656,7 @@ function renderGrid(){
   grid.innerHTML=h;
 }
 
-// ===== LAZY LOAD (IntersectionObserver) =====
+// ===== LAZY LOAD =====
 function setupLazyLoad(){
   if(!('IntersectionObserver' in window)){
     var cards=document.querySelectorAll('.ch-card');
@@ -662,16 +680,18 @@ function renderHero(){
   var featured=CHANNELS.slice().sort(function(a,b){return b.v-a.v;}).slice(0,5);
   var slidesEl=document.getElementById('hero-slides');
   var dotsEl=document.getElementById('hero-dots');
+  if(!slidesEl||!dotsEl)return;
   var sh='',dh='';
   for(var i=0;i<featured.length;i++){
     var ch=featured[i];
     var isActive=i===0?'active':'';
+    var logoHtml=ch.logo?'<img class="slide-logo" src="'+ch.logo+'" alt="'+esc(ch.n)+'" onerror="this.style.display=\'none\'">':'';
     sh+='<div class="hero-slide '+isActive+'" data-idx="'+i+'">'+
       '<div class="slide-bg" style="background:'+(CAT_GRAD[ch.c]||CAT_GRAD.news)+'"></div>'+
       '<div class="slide-grad"></div>'+
       '<div class="slide-content">'+
         '<div class="slide-label">NOW STREAMING</div>'+
-        (ch.logo?'<img class="slide-logo" src="'+ch.logo+'" alt="'+esc(ch.n)+'" onerror="this.style.display=\'none\'">':'')+
+        logoHtml+
         '<h2 class="slide-title">'+esc(ch.n)+'</h2>'+
         '<p class="slide-desc">'+esc(ch.d)+'</p>'+
         '<div class="slide-meta">'+
@@ -717,23 +737,30 @@ function renderSidebar(){
   var onAirBody=document.getElementById('on-air-body');
   var trendingBody=document.getElementById('trending-body');
   var topCh=CHANNELS.slice().sort(function(a,b){return b.v-a.v;}).slice(0,6);
-  var oh='';
-  for(var i=0;i<topCh.length;i++){
-    var ch=topCh[i];
-    oh+='<div class="on-air-ch" data-id="'+ch.id+'"><div class="oa-dot"></div>'+(ch.logo?'<img class="oa-logo" src="'+ch.logo+'" onerror="this.style.display=\'none\'">':'')+'<span class="oa-name">'+esc(ch.n)+'</span><span class="oa-viewers">'+fmtV(ch.v)+'</span></div>';
+  if(onAirBody){
+    var oh='';
+    for(var i=0;i<topCh.length;i++){
+      var ch=topCh[i];
+      var logoHtml=ch.logo?'<img class="oa-logo" src="'+ch.logo+'" onerror="this.style.display=\'none\'">':'';
+      oh+='<div class="on-air-ch" data-id="'+ch.id+'"><div class="oa-dot"></div>'+logoHtml+'<span class="oa-name">'+esc(ch.n)+'</span><span class="oa-viewers">'+fmtV(ch.v)+'</span></div>';
+    }
+    onAirBody.innerHTML=oh;
   }
-  onAirBody.innerHTML=oh;
-  var th='';
-  for(var j=0;j<topCh.length;j++){
-    var tc=topCh[j];
-    th+='<div class="trending-item" data-id="'+tc.id+'"><span class="tr-rank">'+(j+1)+'</span>'+(tc.logo?'<img class="tr-logo" src="'+tc.logo+'" onerror="this.style.display=\'none\'">':'')+'<span class="tr-name">'+esc(tc.n)+'</span><span class="tr-viewers">'+fmtV(tc.v)+'</span></div>';
+  if(trendingBody){
+    var th='';
+    for(var j=0;j<topCh.length;j++){
+      var tc=topCh[j];
+      var logoHtml2=tc.logo?'<img class="tr-logo" src="'+tc.logo+'" onerror="this.style.display=\'none\'">':'';
+      th+='<div class="trending-item" data-id="'+tc.id+'"><span class="tr-rank">'+(j+1)+'</span>'+logoHtml2+'<span class="tr-name">'+esc(tc.n)+'</span><span class="tr-viewers">'+fmtV(tc.v)+'</span></div>';
+    }
+    trendingBody.innerHTML=th;
   }
-  trendingBody.innerHTML=th;
 }
 
 // ===== RENDER UPCOMING =====
 function renderUpcoming(){
   var el=document.getElementById('upcoming-scroll');
+  if(!el)return;
   var cats=['news','sports','movies','entertainment','music','kids','documentary','international'];
   var h='';
   for(var i=0;i<cats.length;i++){
@@ -761,15 +788,13 @@ function openPlayer(ch){
   var video=document.getElementById('hls-video');
   var title=document.getElementById('player-title');
   var status=document.getElementById('player-status');
-  title.textContent=ch.n;
-  status.className='p-status connecting';
-  status.textContent='CONNECTING';
-  modal.classList.add('open');
+  if(title)title.textContent=ch.n;
+  if(status){status.className='p-status connecting';status.textContent='CONNECTING';}
+  if(modal)modal.classList.add('open');
   hideOffline();
   showSpinnerEl();
   startStream(ch.s);
   document.body.style.overflow='hidden';
-  // Auto-suggest similar channels via Mistral AI
   var msgEl=document.getElementById('mistral-msg');
   if(msgEl)msgEl.textContent='Now playing: '+ch.n+'. Ask me for similar channels!';
 }
@@ -777,19 +802,11 @@ function openPlayer(ch){
 function startStream(url){
   if(hlsInst){hlsInst.destroy();hlsInst=null;}
   var video=document.getElementById('hls-video');
+  if(!video)return;
   video.removeAttribute('src');
   video.load();
   hideOffline();
   showSpinnerEl();
-
-  // Smart preload hint
-  try{
-    var link=document.createElement('link');
-    link.rel='preload';link.href=url;link.as='fetch';link.crossOrigin='anonymous';
-    document.head.appendChild(link);
-    setTimeout(function(){try{document.head.removeChild(link);}catch(e){}},5000);
-  }catch(e){}
-
   if(typeof Hls!=='undefined'&&Hls.isSupported()){
     hlsInst=new Hls({enableWorker:true,lowLatencyMode:true,maxBufferLength:30,maxMaxBufferLength:60});
     hlsInst.loadSource(url);
@@ -802,11 +819,8 @@ function startStream(url){
     });
     hlsInst.on(Hls.Events.ERROR,function(event,data){
       if(data.fatal){
-        if(data.type===Hls.ErrorTypes.MEDIA_ERROR){
-          hlsInst.recoverMediaError();
-        }else{
-          handleFatalError(url);
-        }
+        if(data.type===Hls.ErrorTypes.MEDIA_ERROR){hlsInst.recoverMediaError();}
+        else{handleFatalError(url);}
       }
     });
   }else if(video.canPlayType('application/vnd.apple.mpegurl')){
@@ -819,7 +833,6 @@ function startStream(url){
       video.removeEventListener('loadedmetadata',onMeta);
     });
   }
-
   video.onerror=function(){handleFatalError(url);};
   video.onwaiting=function(){showBuffering();};
   video.onplaying=function(){hideBuffering();hideSpinnerEl();setStatus('live');};
@@ -833,9 +846,7 @@ function handleFatalError(url){
     showToast('Retrying in '+(delay/1000)+'s ('+retryCount+'/'+MAX_RETRIES+')');
     if(playerRetryTimer)clearTimeout(playerRetryTimer);
     playerRetryTimer=setTimeout(function(){startStream(url);},delay);
-  }else{
-    tryNextInCategory();
-  }
+  }else{tryNextInCategory();}
 }
 
 function tryNextInCategory(){
@@ -846,7 +857,7 @@ function tryNextInCategory(){
   showToast('Switching to: '+next.n);
   retryCount=0;
   curCh=next;
-  document.getElementById('player-title').textContent=next.n;
+  var t=document.getElementById('player-title');if(t)t.textContent=next.n;
   setStatus('connecting');
   hideOffline();
   showSpinnerEl();
@@ -857,21 +868,19 @@ function closePlayer(){
   var modal=document.getElementById('player-modal');
   var video=document.getElementById('hls-video');
   if(hlsInst){hlsInst.destroy();hlsInst=null;}
-  video.pause();video.removeAttribute('src');video.load();
-  modal.classList.remove('open');
+  if(video){video.pause();video.removeAttribute('src');video.load();}
+  if(modal)modal.classList.remove('open');
   if(playerRetryTimer){clearTimeout(playerRetryTimer);playerRetryTimer=null;}
   document.body.style.overflow='';
-  hideOffline();
-  hideSpinnerEl();
-  hideBuffering();
+  hideOffline();hideSpinnerEl();hideBuffering();
 }
 
 function setStatus(s){
   var el=document.getElementById('player-status');
+  if(!el)return;
   el.className='p-status '+s;
   el.textContent=s==='live'?'LIVE':s==='connecting'?'CONNECTING':'OFFLINE';
 }
-
 function showSpinnerEl(){var el=document.getElementById('player-spinner');if(el)el.classList.add('show');}
 function hideSpinnerEl(){var el=document.getElementById('player-spinner');if(el)el.classList.remove('show');}
 function showBuffering(){var el=document.getElementById('buffering-overlay');if(el)el.classList.add('show');}
@@ -895,6 +904,7 @@ function updateQuality(){
 var toastTimer=null;
 function showToast(msg,type){
   var el=document.getElementById('toast');
+  if(!el)return;
   el.textContent=msg;
   el.className='toast'+(type==='error'?' error':'')+' show';
   if(toastTimer)clearTimeout(toastTimer);
@@ -919,19 +929,22 @@ function doSearch(q){
     return ch.n.toLowerCase().indexOf(q)>=0||ch.c.toLowerCase().indexOf(q)>=0||ch.src.toLowerCase().indexOf(q)>=0||ch.d.toLowerCase().indexOf(q)>=0;
   });
   var grid=document.getElementById('channels-grid');
-  document.getElementById('ch-count').textContent=results.length+' results';
-  if(!results.length){grid.innerHTML='<div style="text-align:center;padding:40px;color:var(--muted)">No channels match "'+esc(q)+'"</div>';return;}
+  var countEl=document.getElementById('ch-count');
+  if(countEl)countEl.textContent=results.length+' results';
+  if(!results.length){if(grid)grid.innerHTML='<div style="text-align:center;padding:40px;color:var(--muted)">No channels match "'+esc(q)+'"</div>';return;}
   var h='';
   for(var i=0;i<results.length;i++){
     var ch=results[i];
     var catGrad=CAT_GRAD[ch.c]||CAT_GRAD.news;
     var catIcon=CAT_ICON[ch.c]||'fa-tv';
+    var logoHtml=ch.logo?'<img class="ch-logo" src="'+ch.logo+'" alt="'+esc(ch.n)+'" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\';">':'';
+    var iconStyle=ch.logo?'style="display:none"':'';
     h+='<div class="ch-card visible" data-id="'+ch.id+'">'+
       '<div class="ch-thumb">'+
         '<div class="ch-thumb-img" style="background:'+catGrad+'"></div>'+
         '<div class="ch-thumb-overlay"></div>'+
-        (ch.logo?'<img class="ch-logo" src="'+ch.logo+'" alt="'+esc(ch.n)+'" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\';">':'')+
-        '<div class="ch-thumb-icon" '+(ch.logo?'style="display:none"':'')+'><i class="fas '+catIcon+'"></i></div>'+
+        logoHtml+
+        '<div class="ch-thumb-icon" '+iconStyle+'><i class="fas '+catIcon+'"></i></div>'+
         '<div class="ch-thumb-label">'+esc(ch.n)+'</div>'+
         '<div class="ch-thumb-src">'+esc(ch.src)+'</div>'+
         '<span class="live-badge">LIVE</span>'+
@@ -945,26 +958,31 @@ function doSearch(q){
         '<div class="ch-desc">'+esc(ch.d)+'</div>'+
       '</div></div>';
   }
-  grid.innerHTML=h;
+  if(grid)grid.innerHTML=h;
 }
 
 // ===== STATS =====
 function updateStats(){
-  document.getElementById('stat-ch').textContent=CHANNELS.length;
-  var hdCount=CHANNELS.filter(function(ch){return ch.q==='1080p'||ch.q==='4K';}).length;
-  document.getElementById('stat-hd').textContent=hdCount;
+  var chEl=document.getElementById('stat-ch');
+  var hdEl=document.getElementById('stat-hd');
+  if(chEl)chEl.textContent=CHANNELS.length;
+  if(hdEl)hdEl.textContent=CHANNELS.filter(function(ch){return ch.q==='1080p'||ch.q==='4K';}).length;
 }
 
-// ===== MISTRAL AI (calls server-side proxy at /api/ai) =====
+// ===== MISTRAL AI =====
 function getChannelContext(){
-  var cats={};for(var i=0;i<CHANNELS.length;i++){var ch=CHANNELS[i];if(!cats[ch.c])cats[ch.c]=[];cats[ch.c].push(ch.n);}
-  var ctx='';for(var k in cats){ctx+=k+': '+cats[k].join(', ')+'. ';}
+  var cats={};
+  for(var i=0;i<CHANNELS.length;i++){var ch=CHANNELS[i];if(!cats[ch.c])cats[ch.c]=[];cats[ch.c].push(ch.n);}
+  var ctx='';
+  for(var k in cats){ctx+=k+': '+cats[k].join(', ')+'. ';}
   return ctx;
 }
+
 function askMistral(question,channelContext){
   var msgEl=document.getElementById('mistral-msg');
+  if(!msgEl)return;
   msgEl.textContent='Thinking...';
-  var sysPrompt='You are EDGE IPTV assistant. We have 76 free live HD TV channels. '+getChannelContext()+(channelContext?' User is currently watching: '+channelContext+'. ':'')+'Help users find channels. Be brief and specific. Recommend channels by name.';
+  var sysPrompt='You are EDGE IPTV assistant. We have '+CHANNELS.length+' free live HD TV channels. '+getChannelContext()+(channelContext?' User is currently watching: '+channelContext+'. ':'')+'Help users find channels. Be brief and specific. Recommend channels by name.';
   fetch('/api/ai',{
     method:'POST',
     headers:{'Content-Type':'application/json'},
@@ -991,21 +1009,39 @@ function askMistral(question,channelContext){
   });
 }
 
+// ===== INIT APP =====
+function initApp(){
+  try{
+    renderCats();
+    renderSkeletons();
+    setTimeout(function(){renderGrid();setupLazyLoad();},150);
+    renderHero();
+    startHero();
+    renderSidebar();
+    renderUpcoming();
+    bindAll();
+    updateStats();
+  }catch(e){
+    console.error('initApp error:',e);
+  }
+  killSplash();
+}
+
 // ===== BIND ALL EVENTS =====
 function bindAll(){
   // Category filter
-  document.getElementById('cat-filter').addEventListener('click',function(e){
+  var catEl=document.getElementById('cat-filter');
+  if(catEl)catEl.addEventListener('click',function(e){
     var btn=e.target.closest('button');
     if(!btn)return;
     curFilter=btn.getAttribute('data-cat');
     playClick();
-    renderCats();
-    renderGrid();
-    setupLazyLoad();
+    renderCats();renderGrid();setupLazyLoad();
   });
 
   // Channel card click
-  document.getElementById('channels-grid').addEventListener('click',function(e){
+  var gridEl=document.getElementById('channels-grid');
+  if(gridEl)gridEl.addEventListener('click',function(e){
     var card=e.target.closest('.ch-card');
     if(!card)return;
     var id=parseInt(card.getAttribute('data-id'));
@@ -1013,97 +1049,92 @@ function bindAll(){
     if(ch){playClick();openPlayer(ch);}
   });
 
-  // Hero slide buttons
-  document.getElementById('hero-next').addEventListener('click',function(){goHero(heroIdx+1);});
-  document.getElementById('hero-prev').addEventListener('click',function(){goHero(heroIdx-1<0?4:heroIdx-1);});
-  document.getElementById('hero-dots').addEventListener('click',function(e){
-    var dot=e.target.closest('span');
-    if(!dot)return;
+  // Hero controls
+  var heroNext=document.getElementById('hero-next');
+  var heroPrev=document.getElementById('hero-prev');
+  var heroDots=document.getElementById('hero-dots');
+  var heroSlides=document.getElementById('hero-slides');
+  if(heroNext)heroNext.addEventListener('click',function(){goHero(heroIdx+1);});
+  if(heroPrev)heroPrev.addEventListener('click',function(){goHero(heroIdx-1<0?4:heroIdx-1);});
+  if(heroDots)heroDots.addEventListener('click',function(e){
+    var dot=e.target.closest('span');if(!dot)return;
     goHero(parseInt(dot.getAttribute('data-idx')));
   });
-  document.getElementById('hero-slides').addEventListener('click',function(e){
-    var btn=e.target.closest('.btn-watch');
-    if(!btn)return;
+  if(heroSlides)heroSlides.addEventListener('click',function(e){
+    var btn=e.target.closest('.btn-watch');if(!btn)return;
     var id=parseInt(btn.getAttribute('data-id'));
     var ch=CHANNELS.find(function(c){return c.id===id;});
     if(ch)openPlayer(ch);
   });
 
   // Player controls
-  document.getElementById('player-close').addEventListener('click',closePlayer);
-  document.getElementById('player-modal').addEventListener('click',function(e){
-    if(e.target===this)closePlayer();
-  });
+  var playerClose=document.getElementById('player-close');
+  var playerModal=document.getElementById('player-modal');
+  if(playerClose)playerClose.addEventListener('click',closePlayer);
+  if(playerModal)playerModal.addEventListener('click',function(e){if(e.target===this)closePlayer();});
 
-  // Play/pause
-  document.getElementById('play-pause').addEventListener('click',function(){
+  var playPause=document.getElementById('play-pause');
+  if(playPause)playPause.addEventListener('click',function(){
     var v=document.getElementById('hls-video');
     var icon=this.querySelector('i');
+    if(!v)return;
     if(v.paused){v.play().catch(function(){});icon.className='fas fa-pause';}
     else{v.pause();icon.className='fas fa-play';}
   });
 
-  // Volume button + slider
   var volBtn=document.getElementById('vol-btn');
   var volSlider=document.getElementById('vol-slider');
-  volBtn.addEventListener('click',function(){
+  if(volBtn)volBtn.addEventListener('click',function(){
     var v=document.getElementById('hls-video');
     var icon=volBtn.querySelector('i');
+    if(!v)return;
     if(v.muted){v.muted=false;volSlider.value=v.volume*100;icon.className='fas fa-volume-up';}
     else{v.muted=true;volSlider.value=0;icon.className='fas fa-volume-mute';}
   });
-  volSlider.addEventListener('input',function(){
+  if(volSlider)volSlider.addEventListener('input',function(){
     var v=document.getElementById('hls-video');
+    if(!v)return;
     var val=parseInt(this.value);
-    v.volume=val/100;
-    v.muted=val===0;
-    var icon=volBtn.querySelector('i');
-    if(val===0)icon.className='fas fa-volume-mute';
-    else if(val<50)icon.className='fas fa-volume-down';
-    else icon.className='fas fa-volume-up';
+    v.volume=val/100;v.muted=val===0;
+    var icon=volBtn?volBtn.querySelector('i'):null;
+    if(icon){
+      if(val===0)icon.className='fas fa-volume-mute';
+      else if(val<50)icon.className='fas fa-volume-down';
+      else icon.className='fas fa-volume-up';
+    }
   });
 
-  // Fullscreen
-  document.getElementById('fullscreen-btn').addEventListener('click',function(){
+  var fullscreenBtn=document.getElementById('fullscreen-btn');
+  if(fullscreenBtn)fullscreenBtn.addEventListener('click',function(){
     var wrap=document.querySelector('.player-wrap');
     if(!wrap)return;
     if(document.fullscreenElement)document.exitFullscreen();
     else wrap.requestFullscreen().catch(function(){});
   });
 
-  // Audio button placeholder
-  document.getElementById('audio-btn').addEventListener('click',function(){
-    showToast('Audio selection coming soon');
-  });
+  var audioBtn=document.getElementById('audio-btn');
+  if(audioBtn)audioBtn.addEventListener('click',function(){showToast('Audio selection coming soon');});
 
-  // Offline overlay buttons
-  document.getElementById('btn-retry').addEventListener('click',function(){
-    if(!curCh)return;
-    retryCount=0;
-    hideOffline();
-    showSpinnerEl();
-    setStatus('connecting');
-    startStream(curCh.s);
+  var btnRetry=document.getElementById('btn-retry');
+  var btnSwitch=document.getElementById('btn-switch');
+  if(btnRetry)btnRetry.addEventListener('click',function(){
+    if(!curCh)return;retryCount=0;hideOffline();showSpinnerEl();setStatus('connecting');startStream(curCh.s);
   });
-  document.getElementById('btn-switch').addEventListener('click',function(){
-    tryNextInCategory();
-  });
+  if(btnSwitch)btnSwitch.addEventListener('click',function(){tryNextInCategory();});
 
   // Search
-  document.getElementById('search-toggle').addEventListener('click',function(){
-    var box=document.getElementById('search-box');
-    box.classList.toggle('open');
-    if(box.classList.contains('open'))document.getElementById('search-input').focus();
+  var searchToggle=document.getElementById('search-toggle');
+  var searchBox=document.getElementById('search-box');
+  var searchInput=document.getElementById('search-input');
+  if(searchToggle)searchToggle.addEventListener('click',function(){
+    if(searchBox){searchBox.classList.toggle('open');
+    if(searchBox.classList.contains('open')&&searchInput)searchInput.focus();}
   });
-  document.getElementById('search-input').addEventListener('input',function(){
-    doSearch(this.value);
-  });
+  if(searchInput)searchInput.addEventListener('input',function(){doSearch(this.value);});
 
   // Sound toggle
-  document.getElementById('sound-toggle').addEventListener('click',toggleSound);
-
-  // Update sound toggle icon
   var soundBtn=document.getElementById('sound-toggle');
+  if(soundBtn)soundBtn.addEventListener('click',toggleSound);
   if(soundBtn&&soundEnabled)soundBtn.innerHTML='<i class="fas fa-volume-up"></i>';
 
   // Sidebar toggles
@@ -1120,25 +1151,25 @@ function bindAll(){
   }
 
   // Sidebar channel clicks
-  document.getElementById('on-air-body').addEventListener('click',function(e){
-    var item=e.target.closest('.on-air-ch');
-    if(!item)return;
+  var onAirBody=document.getElementById('on-air-body');
+  if(onAirBody)onAirBody.addEventListener('click',function(e){
+    var item=e.target.closest('.on-air-ch');if(!item)return;
     var id=parseInt(item.getAttribute('data-id'));
     var ch=CHANNELS.find(function(c){return c.id===id;});
     if(ch)openPlayer(ch);
   });
-  document.getElementById('trending-body').addEventListener('click',function(e){
-    var item=e.target.closest('.trending-item');
-    if(!item)return;
+  var trendingBody=document.getElementById('trending-body');
+  if(trendingBody)trendingBody.addEventListener('click',function(e){
+    var item=e.target.closest('.trending-item');if(!item)return;
     var id=parseInt(item.getAttribute('data-id'));
     var ch=CHANNELS.find(function(c){return c.id===id;});
     if(ch)openPlayer(ch);
   });
 
-  // Upcoming card clicks
-  document.getElementById('upcoming-scroll').addEventListener('click',function(e){
-    var card=e.target.closest('.upcoming-card');
-    if(!card)return;
+  // Upcoming clicks
+  var upcomingScroll=document.getElementById('upcoming-scroll');
+  if(upcomingScroll)upcomingScroll.addEventListener('click',function(e){
+    var card=e.target.closest('.upcoming-card');if(!card)return;
     var id=parseInt(card.getAttribute('data-id'));
     var ch=CHANNELS.find(function(c){return c.id===id;});
     if(ch)openPlayer(ch);
@@ -1152,22 +1183,23 @@ function bindAll(){
       for(var j=0;j<navLinks.length;j++)navLinks[j].classList.remove('active');
       this.classList.add('active');
       var nav=this.getAttribute('data-nav');
-      if(nav==='sports'){curFilter='sports';}
-      else if(nav==='news'){curFilter='news';}
-      else if(nav==='live'){curFilter='all';}
-      else{curFilter='all';}
+      if(nav==='sports')curFilter='sports';
+      else if(nav==='news')curFilter='news';
+      else curFilter='all';
       renderCats();renderGrid();setupLazyLoad();
-      window.scrollTo({top:document.getElementById('channels-section').offsetTop-80,behavior:'smooth'});
+      var chSec=document.getElementById('channels-section');
+      if(chSec)window.scrollTo({top:chSec.offsetTop-80,behavior:'smooth'});
     });
   }
 
   // Mistral send
-  document.getElementById('mistral-send').addEventListener('click',function(){
-    var input=document.getElementById('mistral-input');
-    if(input.value.trim())askMistral(input.value.trim(),curCh?curCh.n+' ('+catLabel(curCh.c)+')':'');
-    input.value='';
+  var mistralSend=document.getElementById('mistral-send');
+  var mistralInput=document.getElementById('mistral-input');
+  if(mistralSend)mistralSend.addEventListener('click',function(){
+    if(mistralInput&&mistralInput.value.trim())askMistral(mistralInput.value.trim(),curCh?curCh.n+' ('+catLabel(curCh.c)+')':'');
+    if(mistralInput)mistralInput.value='';
   });
-  document.getElementById('mistral-input').addEventListener('keydown',function(e){
+  if(mistralInput)mistralInput.addEventListener('keydown',function(e){
     if(e.key==='Enter'){
       if(this.value.trim())askMistral(this.value.trim(),curCh?curCh.n+' ('+catLabel(curCh.c)+')':'');
       this.value='';
@@ -1175,13 +1207,19 @@ function bindAll(){
   });
 
   // ESC to close player
-  document.addEventListener('keydown',function(e){
-    if(e.key==='Escape')closePlayer();
-  });
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')closePlayer();});
 }
+
+// ===== BOOT =====
+try{initApp();}catch(e){console.error('BOOT error:',e);killSplash();}
+
+})();
 <\/script>
 </body>
 </html>`;
-    return new Response(html, {headers:{'Content-Type':'text/html;charset=UTF-8'}});
+
+    return new Response(html, {
+      headers: { 'Content-Type': 'text/html;charset=UTF-8' }
+    });
   }
 };
