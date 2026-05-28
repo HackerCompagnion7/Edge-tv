@@ -11,6 +11,25 @@ import { motion, AnimatePresence } from 'motion/react';
 import { IPTVChannel, IPTVCategory, ChatMessage, NowPlayingMetadata } from './types';
 import guideData from './channels.json';
 
+const CHANNEL_BACKDROPS: Record<number, string> = {
+  1: "/src/assets/images/cine_adrenalina_hero_1779928780435.png",
+  2: "/src/assets/images/cine_comedia_hero_1779928823672.png",
+  3: "/src/assets/images/cine_terror_hero_1779928757525.png",
+  4: "/src/assets/images/cine_premiere_hero_1779928803684.png",
+  5: "https://images.unsplash.com/photo-1518173946687-a4c8a383392e?w=500&q=80",
+  6: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=500&q=80",
+  7: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=500&q=80",
+  8: "/src/assets/images/cine_adrenalina_hero_1779928780435.png",
+  9: "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=500&q=80",
+  10: "https://image.tmdb.org/t/p/w780/i7nS7R6K7rL1dZg3S9V9jT6p6R1E.jpg",
+  13: "/src/assets/images/cine_terror_hero_1779928757525.png",
+  25: "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=500&q=80", // Movies Action
+  26: "/src/assets/images/cine_terror_hero_1779928757525.png", // Movies Thriller
+  30: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=500&q=80", // Runtime Espanol
+  32: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=500&q=80", // Classic Movies
+  34: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=500&q=80", // Paramount Movie Channel
+};
+
 export default function App() {
   const allChannels: IPTVChannel[] = useMemo(() => guideData.channels || [], []);
   const allCategories: IPTVCategory[] = useMemo(() => guideData.cats || [], []);
@@ -104,7 +123,7 @@ export default function App() {
       channelId: 3, // Cine terror
       title: "Cine terror",
       tagline: "NOW STREAMING",
-      backdrop: "https://image.tmdb.org/t/p/original/937g68URfoRK799b66Zg7m68667.jpg", // Pennywise IT
+      backdrop: "/src/assets/images/cine_terror_hero_1779928757525.png",
       category: "Peliculas",
       genres: ["Peliculas", "Movies", "Terror"],
       overview: "Siente el verdadero horror en alta definición las 24 horas. Disfruta hoy de los éxitos más aterradores del cine moderno con un enlace directo satelital.",
@@ -115,7 +134,7 @@ export default function App() {
       channelId: 1, // Cine adrenalina
       title: "Cine adrenalina",
       tagline: "SIEMPRE EN VIVO",
-      backdrop: "https://image.tmdb.org/t/p/original/zsa9reX69M3986Vj3S9jT9p6R1E.jpg", // John Wick style
+      backdrop: "/src/assets/images/cine_adrenalina_hero_1779928780435.png",
       category: "Peliculas",
       genres: ["Adrenalina", "Accion", "Peliculas"],
       overview: "Programación repleta de acción ininterrumpida. John Wick, Gladiador, Duro de Matar y los grandes éxitos de adrenalina pura están aquí con audio premium.",
@@ -126,7 +145,7 @@ export default function App() {
       channelId: 4, // Cine Premiere
       title: "Cine Premiere",
       tagline: "ESTRENOS PREMIUM",
-      backdrop: "https://image.tmdb.org/t/p/original/b0Plj7ST9u6gE6Y0z76Z6nnZ3UM.jpg", // Batman theme
+      backdrop: "/src/assets/images/cine_premiere_hero_1779928803684.png",
       category: "Peliculas",
       genres: ["Estrenos", "Premiere", "HD"],
       overview: "Sintoniza los estrenos y las películas más taquilleras del cine premium mundial. La mejor resolución de video para tus ojos las 24 horas del día.",
@@ -137,7 +156,7 @@ export default function App() {
       channelId: 2, // Cine comedia
       title: "Cine comedia",
       tagline: "SIEMPRE EN VIVO",
-      backdrop: "https://image.tmdb.org/t/p/original/fU7g9xep8Fj3vskF0D9O9Z7m0B3.jpg", // Comedy Hangover theme
+      backdrop: "/src/assets/images/cine_comedia_hero_1779928823672.png",
       category: "Peliculas",
       genres: ["Comedia", "Risas", "Peliculas"],
       overview: "Ríete a más no poder con las comedias más virales y los clásicos divertidos que marcaron época. Programación ligera para disfrutar en familia.",
@@ -151,7 +170,7 @@ export default function App() {
       id: "vod-batman",
       title: "Cine Premiere: The Batman",
       theme: "The Batman",
-      backdrop: "https://image.tmdb.org/t/p/w780/b0Plj7ST9u6gE6Y0z76Z6nnZ3UM.jpg",
+      backdrop: "/src/assets/images/cine_premiere_hero_1779928803684.png",
       channelId: 4, // Cine Premiere
       category: "CINE",
       overview: "En su segundo año luchando contra el crimen..."
@@ -1107,6 +1126,7 @@ export default function App() {
                         {filteredChannels.map(channel => {
                           const isCurrent = selectedChannel?.id === channel.id;
                           const channelCountry = getChannelCountry(channel.n, channel.c);
+                          const posterUrl = CHANNEL_BACKDROPS[channel.id];
                           
                           return (
                             <div
@@ -1116,15 +1136,26 @@ export default function App() {
                                 setIsPlaying(true);
                                 setActiveTab('live');
                               }}
-                              className={`group relative bg-gradient-to-b from-[#111317] to-[#0a0a0d] rounded-2xl p-4 border transition-all flex flex-col justify-between select-none shadow-md h-40 ${
+                              className={`group relative bg-gradient-to-b from-[#111317] to-[#0a0a0d] rounded-2xl p-4 border transition-all flex flex-col justify-between overflow-hidden select-none shadow-md h-40 ${
                                 isCurrent 
                                   ? 'border-red-600 shadow-[0_0_15px_rgba(220,38,38,0.15)] ring-1 ring-red-600/30' 
                                   : 'border-white/5 hover:border-slate-800 hover:scale-[1.02] hover:shadow-lg'
                               }`}
                             >
+                              {posterUrl && (
+                                <>
+                                  <img 
+                                    src={posterUrl} 
+                                    alt="" 
+                                    referrerPolicy="no-referrer"
+                                    className="absolute inset-0 w-full h-full object-cover opacity-25 group-hover:opacity-45 transition-all duration-300 pointer-events-none rounded-2xl z-0" 
+                                  />
+                                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/45 to-[#0b0c0e]/30 pointer-events-none rounded-2xl z-0" />
+                                </>
+                              )}
                               
                               {/* Top metadata detail segment */}
-                              <div className="flex justify-between items-start">
+                              <div className="flex justify-between items-start z-10">
                                 {/* Bottom category label (GENERIC, ANIME, MOVIE) */}
                                 <span className="text-[9px] font-mono font-black py-0.5 px-2 bg-white/5 text-slate-400 rounded-md tracking-wider uppercase">
                                   {channel.c === 'french' ? 'FRANCE' : channel.c.toUpperCase()}
@@ -1136,8 +1167,8 @@ export default function App() {
                                 </span>
                               </div>
 
-                              {/* Center area with high fidelity flipped logo reflection! ( hallmark of layout) */}
-                              <div className="flex flex-col items-center justify-center relative select-none h-16 mt-2 mb-1.5 overflow-hidden">
+                              {/* Center area with high fidelity flipped logo reflection! */}
+                              <div className="flex flex-col items-center justify-center relative select-none h-16 mt-2 mb-1.5 overflow-hidden z-10">
                                 {/* Normal Logo */}
                                 <img 
                                   src={channel.logo} 
@@ -1158,7 +1189,7 @@ export default function App() {
                               </div>
 
                               {/* Bottom labels */}
-                              <div className="flex items-end justify-between mt-auto">
+                              <div className="flex items-end justify-between mt-auto z-10">
                                 <div className="min-w-0 w-4/5">
                                   <h4 className={`text-xs font-black truncate tracking-wide group-hover:text-red-500 transition-colors ${
                                     isCurrent ? 'text-red-500' : 'text-white'
@@ -1174,7 +1205,7 @@ export default function App() {
                               </div>
 
                               {/* Corner status glow dot */}
-                              <span className="absolute left-2.5 top-2.5 h-1 w-1 rounded-full animate-pulse bg-red-600" />
+                              <span className="absolute left-2.5 top-2.5 h-1 w-1 rounded-full animate-pulse bg-red-600 z-10" />
                               
                             </div>
                           );
