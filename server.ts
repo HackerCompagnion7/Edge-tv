@@ -285,6 +285,43 @@ INSTRUCCIONES CLAVE:
     }
   });
 
+  // Helper to resolve hostnames via public secure DNS over HTTPS (DoH) API
+  async function resolveDNSDoH(hostname: string): Promise<string | null> {
+    try {
+      const res = await fetch(`https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(hostname)}&type=A`, {
+        headers: { 'accept': 'application/dns-json' }
+      });
+      if (res.ok) {
+        const data: any = await res.json();
+        if (data && data.Answer) {
+          const aRecord = data.Answer.find((ans: any) => ans.type === 1);
+          if (aRecord && aRecord.data) {
+            console.log(`[DoH Cloudflare] Resolved ${hostname} to ${aRecord.data}`);
+            return aRecord.data;
+          }
+        }
+      }
+    } catch (err: any) {
+      console.warn('[DoH Cloudflare] Failed resolution for ' + hostname + ':', err.message);
+    }
+    try {
+      const res = await fetch(`https://dns.google/resolve?name=${encodeURIComponent(hostname)}&type=A`);
+      if (res.ok) {
+        const data: any = await res.json();
+        if (data && data.Answer) {
+          const aRecord = data.Answer.find((ans: any) => ans.type === 1);
+          if (aRecord && aRecord.data) {
+            console.log(`[DoH Google] Resolved ${hostname} to ${aRecord.data}`);
+            return aRecord.data;
+          }
+        }
+      }
+    } catch (err: any) {
+      console.warn('[DoH Google] Failed resolution for ' + hostname + ':', err.message);
+    }
+    return null;
+  }
+
   // Clean, Native IPTV stream proxy handler (bypasses CORS & rewrites nested HTTP paths for HLS)
   app.get('/proxy', async (req, res) => {
     const targetUrl = req.query.url as string;
@@ -293,15 +330,43 @@ INSTRUCCIONES CLAVE:
       return;
     }
 
+    let targetResp: Response;
     try {
-      const targetResp = await fetch(targetUrl, {
+      // First, try normal native fetch
+      targetResp = await fetch(targetUrl, {
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
           'Accept': '*/*',
           'Origin': new URL(targetUrl).origin
         }
       });
+    } catch (err: any) {
+      console.warn(`[Proxy Fetch Exception] Initial connection to ${targetUrl} failed: ${err.message}. Applying secure DoH DNS override...`);
+      try {
+        const parsedUrl = new URL(targetUrl);
+        const resolvedIp = await resolveDNSDoH(parsedUrl.hostname);
+        if (resolvedIp) {
+          const overriddenUrl = targetUrl.replace(parsedUrl.hostname, resolvedIp);
+          console.log(`[DoH Override] Directing fetch to overridden IP target: ${overriddenUrl}`);
+          targetResp = await fetch(overriddenUrl, {
+            headers: {
+              'Host': parsedUrl.host,
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+              'Accept': '*/*',
+              'Origin': parsedUrl.origin
+            }
+          });
+        } else {
+          throw err;
+        }
+      } catch (overrideErr: any) {
+        console.error('[Proxy DNS Override Error] Connection override check failed:', overrideErr.message);
+        res.status(502).send('CORS Proxy failed connection and DNS Resolution: ' + overrideErr.message);
+        return;
+      }
+    }
 
+    try {
       const contentType = targetResp.headers.get('Content-Type') || '';
       const isM3u8 = contentType.includes('mpegurl') || contentType.includes('mpegURL') || contentType.includes('x-mpegURL') || targetUrl.includes('.m3u8');
 
@@ -318,15 +383,8 @@ INSTRUCCIONES CLAVE:
         const base = finalUrl.substring(0, finalUrl.lastIndexOf('/') + 1);
         const bodyText = await targetResp.text();
 
-        // Resolve absolute origin
-        const host = req.get('host') || 'localhost';
-        const protoHeader = req.headers['x-forwarded-proto'];
-        let proto = (Array.isArray(protoHeader) ? protoHeader[0] : protoHeader) || req.protocol || 'http';
-        if (!host.includes('localhost') && !host.includes('127.0.0.1')) {
-          proto = 'https';
-        }
-        const origin = `${proto}://${host}`;
-
+        // Rewrite playlist lines to refer back to our relative proxy endpoint.
+        // Using relative-root URLs allows the user's browser to naturally resolve against their correct external address.
         const lines = bodyText.split('\n');
         const rewritten = lines.map(line => {
           const trimmed = line.trim();
@@ -334,16 +392,14 @@ INSTRUCCIONES CLAVE:
             if (trimmed.includes('URI="')) {
               return line.replace(/URI="([^"]+)"/g, (match, uri) => {
                 if (uri.includes('/proxy?url=')) return match;
-                if (uri.startsWith('http')) return 'URI="' + origin + '/proxy?url=' + encodeURIComponent(uri) + '"';
-                return 'URI="' + origin + '/proxy?url=' + encodeURIComponent(base + uri) + '"';
+                const absoluteUri = uri.startsWith('http') ? uri : (base + uri);
+                return 'URI="/proxy?url=' + encodeURIComponent(absoluteUri) + '"';
               });
             }
             return line;
           }
-          if (trimmed.startsWith('http')) {
-            return origin + '/proxy?url=' + encodeURIComponent(trimmed);
-          }
-          return origin + '/proxy?url=' + encodeURIComponent(base + trimmed);
+          const absoluteUrl = trimmed.startsWith('http') ? trimmed : (base + trimmed);
+          return '/proxy?url=' + encodeURIComponent(absoluteUrl);
         });
 
         res.set('Content-Type', contentType || 'application/vnd.apple.mpegurl');
@@ -355,8 +411,8 @@ INSTRUCCIONES CLAVE:
         res.send(buffer);
       }
     } catch (err: any) {
-      console.error('[Proxy Error] Connection check failed:', err.message);
-      res.status(502).send('Proxy error: ' + err.message);
+      console.error('[Proxy Read Error] Reading data transfer failed:', err.message);
+      res.status(502).send('Proxy error reading source media stream data: ' + err.message);
     }
   });
 

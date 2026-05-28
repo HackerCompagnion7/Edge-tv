@@ -93,6 +93,36 @@ export default {
   }
 };
 
+async function resolveDNSDoH(hostname) {
+  try {
+    const res = await fetch(`https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(hostname)}&type=A`, {
+      headers: { 'accept': 'application/dns-json' }
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.Answer) {
+        const aRecord = data.Answer.find(ans => ans.type === 1);
+        if (aRecord && aRecord.data) return aRecord.data;
+      }
+    }
+  } catch (err) {
+    console.error('DoH Cloudflare resolution failure:', err);
+  }
+  try {
+    const res = await fetch(`https://dns.google/resolve?name=${encodeURIComponent(hostname)}&type=A`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.Answer) {
+        const aRecord = data.Answer.find(ans => ans.type === 1);
+        if (aRecord && aRecord.data) return aRecord.data;
+      }
+    }
+  } catch (err) {
+    console.error('DoH Google resolution failure:', err);
+  }
+  return null;
+}
+
 async function handleProxy(request, env) {
   const url = new URL(request.url);
   const targetUrl = url.searchParams.get('url');
@@ -100,15 +130,42 @@ async function handleProxy(request, env) {
     return new Response('Missing url parameter', { status: 400, headers: { 'Access-Control-Allow-Origin': '*' } });
   }
 
+  let targetResp;
   try {
-    const targetResp = await fetch(targetUrl, {
+    targetResp = await fetch(targetUrl, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Accept': '*/*',
         'Origin': new URL(targetUrl).origin
       }
     });
+  } catch (err) {
+    console.warn(`[Worker Proxy Fetch Exception] Initial connection to ${targetUrl} failed: ${err.message}. Applying secure DoH DNS override...`);
+    try {
+      const parsedUrl = new URL(targetUrl);
+      const resolvedIp = await resolveDNSDoH(parsedUrl.hostname);
+      if (resolvedIp) {
+        const overriddenUrl = targetUrl.replace(parsedUrl.hostname, resolvedIp);
+        targetResp = await fetch(overriddenUrl, {
+          headers: {
+            'Host': parsedUrl.host,
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': '*/*',
+            'Origin': parsedUrl.origin
+          }
+        });
+      } else {
+        throw err;
+      }
+    } catch (overrideErr) {
+      return new Response('Proxy DNS Override failed: ' + overrideErr.message, {
+        status: 502,
+        headers: { 'Access-Control-Allow-Origin': '*' }
+      });
+    }
+  }
 
+  try {
     const contentType = targetResp.headers.get('Content-Type') || '';
     const isM3u8 = contentType.includes('mpegurl') || contentType.includes('mpegURL') || contentType.includes('x-mpegURL') || targetUrl.includes('.m3u8');
 
@@ -123,8 +180,6 @@ async function handleProxy(request, env) {
       const base = finalUrl.substring(0, finalUrl.lastIndexOf('/') + 1);
       const bodyText = await targetResp.text();
 
-      const origin = url.origin;
-
       const lines = bodyText.split('\n');
       const rewritten = lines.map(line => {
         const trimmed = line.trim();
@@ -132,16 +187,14 @@ async function handleProxy(request, env) {
           if (trimmed.includes('URI="')) {
             return line.replace(/URI="([^"]+)"/g, (match, uri) => {
               if (uri.includes('/proxy?url=')) return match;
-              if (uri.startsWith('http')) return 'URI="' + origin + '/proxy?url=' + encodeURIComponent(uri) + '"';
-              return 'URI="' + origin + '/proxy?url=' + encodeURIComponent(base + uri) + '"';
+              const absoluteUri = uri.startsWith('http') ? uri : (base + uri);
+              return 'URI="/proxy?url=' + encodeURIComponent(absoluteUri) + '"';
             });
           }
           return line;
         }
-        if (trimmed.startsWith('http')) {
-          return origin + '/proxy?url=' + encodeURIComponent(trimmed);
-        }
-        return origin + '/proxy?url=' + encodeURIComponent(base + trimmed);
+        const absoluteUrl = trimmed.startsWith('http') ? trimmed : (base + trimmed);
+        return '/proxy?url=' + encodeURIComponent(absoluteUrl);
       });
 
       headers.set('Content-Type', contentType || 'application/vnd.apple.mpegurl');
