@@ -16,18 +16,23 @@ const CHANNEL_BACKDROPS: Record<number, string> = {
   2: "/src/assets/images/cine_comedia_hero_1779928823672.png",
   3: "/src/assets/images/cine_terror_hero_1779928757525.png",
   4: "/src/assets/images/cine_premiere_hero_1779928803684.png",
-  5: "https://images.unsplash.com/photo-1518173946687-a4c8a383392e?w=500&q=80",
-  6: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=500&q=80",
-  7: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=500&q=80",
+  5: "/src/assets/images/movie_category_poster_1779929761270.png",
+  6: "/src/assets/images/movie_category_poster_1779929761270.png",
+  7: "/src/assets/images/movie_category_poster_1779929761270.png",
   8: "/src/assets/images/cine_adrenalina_hero_1779928780435.png",
-  9: "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=500&q=80",
+  9: "/src/assets/images/movie_category_poster_1779929761270.png",
   10: "https://image.tmdb.org/t/p/w780/i7nS7R6K7rL1dZg3S9V9jT6p6R1E.jpg",
+  11: "/src/assets/images/movie_category_poster_1779929761270.png",
+  12: "/src/assets/images/movie_category_poster_1779929761270.png",
   13: "/src/assets/images/cine_terror_hero_1779928757525.png",
-  25: "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=500&q=80", // Movies Action
+  20: "/src/assets/images/movie_category_poster_1779929761270.png",
+  21: "/src/assets/images/movie_category_poster_1779929761270.png",
+  23: "/src/assets/images/movie_category_poster_1779929761270.png",
+  25: "/src/assets/images/movie_category_poster_1779929761270.png", // Movies Action
   26: "/src/assets/images/cine_terror_hero_1779928757525.png", // Movies Thriller
-  30: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=500&q=80", // Runtime Espanol
-  32: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=500&q=80", // Classic Movies
-  34: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=500&q=80", // Paramount Movie Channel
+  30: "/src/assets/images/movie_category_poster_1779929761270.png", // Runtime Espanol
+  32: "/src/assets/images/movie_category_poster_1779929761270.png", // Classic Movies
+  34: "/src/assets/images/movie_category_poster_1779929761270.png", // Paramount Movie Channel
 };
 
 export default function App() {
@@ -161,6 +166,17 @@ export default function App() {
       genres: ["Comedia", "Risas", "Peliculas"],
       overview: "Ríete a más no poder con las comedias más virales y los clásicos divertidos que marcaron época. Programación ligera para disfrutar en familia.",
       v: "1.8k"
+    },
+    {
+      id: "slide-vintage",
+      channelId: 6, // Cine Clásico
+      title: "Cine Premium",
+      tagline: "CATEGORÍA PELÍCULAS",
+      backdrop: "/src/assets/images/movie_category_poster_1779929761270.png",
+      category: "Peliculas",
+      genres: ["Peliculas", "Movies", "Premium"],
+      overview: "Descubre la máxima expresión del arte cinematográfico. Las mejores películas, clásicos de Hollywood y grandes joyas galardonadas en alta definición y con una iluminación espectacular.",
+      v: "5.0k"
     }
   ], []);
 
@@ -630,38 +646,38 @@ export default function App() {
     switch (catId) {
       case 'all':
         return {
-          bg: 'hover:bg-blue-950/20 active:bg-blue-950/40 border-slate-800 hover:border-blue-500/50 text-slate-300',
-          active: 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.3)]',
+          bg: 'bg-white/5 backdrop-blur-sm border-white/5 hover:bg-blue-500/10 hover:border-blue-500/30 text-slate-300',
+          active: 'bg-gradient-to-r from-blue-600/35 to-indigo-600/35 backdrop-blur-md text-white border-blue-400/70 shadow-[0_0_15px_rgba(59,130,246,0.25)]',
           icon: <Globe className="h-4 w-4 mr-2 text-blue-400" />
         };
       case 'movies':
         return {
-          bg: 'hover:bg-red-950/20 active:bg-red-950/40 border-slate-800 hover:border-red-500/50 text-slate-300',
-          active: 'bg-gradient-to-r from-red-600 to-amber-600 text-white border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.3)]',
+          bg: 'bg-white/5 backdrop-blur-sm border-white/5 hover:bg-red-500/10 hover:border-red-500/30 text-slate-300',
+          active: 'bg-gradient-to-r from-red-600/35 to-amber-600/35 backdrop-blur-md text-white border-red-400/70 shadow-[0_0_15px_rgba(239,68,68,0.25)]',
           icon: <Film className="h-4 w-4 mr-2 text-red-400" />
         };
       case 'french':
         return {
-          bg: 'hover:bg-amber-950/20 active:bg-amber-950/40 border-slate-800 hover:border-amber-500/50 text-slate-300',
-          active: 'bg-gradient-to-r from-amber-600 to-[#eab308] text-white border-amber-500 shadow-[0_0_15px_rgba(234,179,8,0.3)]',
+          bg: 'bg-white/5 backdrop-blur-sm border-white/5 hover:bg-amber-500/10 hover:border-amber-500/30 text-slate-300',
+          active: 'bg-gradient-to-r from-amber-600/35 to-yellow-500/35 backdrop-blur-md text-white border-amber-450/70 shadow-[0_0_15px_rgba(234,179,8,0.25)]',
           icon: <Compass className="h-4 w-4 mr-2 text-amber-400" />
         };
       case 'kids':
         return {
-          bg: 'hover:bg-purple-950/20 active:bg-purple-950/40 border-slate-800 hover:border-purple-500/50 text-slate-300',
-          active: 'bg-gradient-to-r from-purple-500 to-pink-500 text-white border-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.3)]',
+          bg: 'bg-white/5 backdrop-blur-sm border-white/5 hover:bg-purple-500/10 hover:border-purple-500/30 text-slate-300',
+          active: 'bg-gradient-to-r from-purple-500/35 to-pink-500/35 backdrop-blur-md text-white border-purple-400/70 shadow-[0_0_15px_rgba(168,85,247,0.25)]',
           icon: <Gamepad2 className="h-4 w-4 mr-2 text-purple-400" />
         };
       case 'music':
         return {
-          bg: 'hover:bg-pink-950/20 active:bg-pink-950/40 border-slate-800 hover:border-pink-500/50 text-slate-300',
-          active: 'bg-gradient-to-r from-pink-500 to-rose-500 text-white border-pink-400 shadow-[0_0_15px_rgba(236,72,153,0.3)]',
+          bg: 'bg-white/5 backdrop-blur-sm border-white/5 hover:bg-pink-500/10 hover:border-pink-500/30 text-slate-300',
+          active: 'bg-gradient-to-r from-pink-500/35 to-rose-500/35 backdrop-blur-md text-white border-pink-400/70 shadow-[0_0_15px_rgba(236,72,153,0.25)]',
           icon: <Music className="h-4 w-4 mr-2 text-pink-400" />
         };
       default:
         return {
-          bg: 'border-slate-800 hover:border-slate-700 text-slate-300',
-          active: 'bg-white text-black border-white',
+          bg: 'bg-white/5 backdrop-blur-sm border-white/5 hover:bg-slate-500/10 hover:border-slate-500/30 text-slate-300',
+          active: 'bg-white/15 backdrop-blur-md text-white border-white/30',
           icon: <Tv className="h-4 w-4 mr-2" />
         };
     }
@@ -750,10 +766,18 @@ export default function App() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.3 }}
-          className="min-h-screen flex flex-col bg-[#070707] text-[#f0f0f0]"
+          className="min-h-screen flex flex-col bg-[#020202] text-white relative z-0 overflow-x-hidden"
         >
+          {/* Cinematic Spotlight/Ambient Aurora Background Layer */}
+          <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-tr from-[#020202] via-[#0a0f1d] to-[#121226]"></div>
+            <div className="absolute top-[-10%] right-[-10%] w-[600px] h-[600px] bg-blue-600/15 rounded-full blur-[140px]"></div>
+            <div className="absolute bottom-[-20%] left-[-10%] w-[800px] h-[800px] bg-indigo-900/20 rounded-full blur-[160px]"></div>
+            <div className="absolute top-[40%] left-[30%] w-[400px] h-[400px] bg-purple-900/10 rounded-full blur-[130px]"></div>
+          </div>
+
           {/* Brand Premium Header (Exactly matches Screenshot 1 / 2) */}
-          <header className="sticky top-0 z-50 bg-[#070707]/90 backdrop-blur-md border-b border-white/5 py-4 px-4 lg:px-8">
+          <header className="sticky top-0 z-50 bg-white/5 backdrop-blur-xl border-b border-white/10 py-4 px-4 lg:px-8 relative z-20">
             <div className="max-w-[1300px] mx-auto flex items-center justify-between">
               
               {/* E D G E Logo */}
@@ -777,7 +801,7 @@ export default function App() {
                   <HomeIcon className="h-4 w-4" />
                   Home
                   {activeTab === 'home' && (
-                    <span className="bg-gradient-to-r from-red-600 to-amber-600 shadow-[0_0_12px_rgba(239,68,68,1)] h-0.5 rounded-full absolute bottom-[-21px] left-[-4px] right-[-4px]" />
+                    <span className="bg-gradient-to-r from-indigo-500 to-purple-600 shadow-[0_0_12px_rgba(99,102,241,1)] h-0.5 rounded-full absolute bottom-[-21px] left-[-4px] right-[-4px]" />
                   )}
                 </button>
                 <button
@@ -786,10 +810,10 @@ export default function App() {
                     activeTab === 'live' ? 'text-white font-semibold' : 'text-slate-400 hover:text-white'
                   }`}
                 >
-                  <Tv className="h-4 w-4" />
+                  <Tv className="h-4 w-4 text-indigo-400" />
                   Live
                   {activeTab === 'live' && (
-                    <span className="bg-gradient-to-r from-red-600 to-amber-600 shadow-[0_0_12px_rgba(239,68,68,1)] h-0.5 rounded-full absolute bottom-[-21px] left-[-4px] right-[-4px]" />
+                    <span className="bg-gradient-to-r from-indigo-500 to-purple-600 shadow-[0_0_12px_rgba(99,102,241,1)] h-0.5 rounded-full absolute bottom-[-21px] left-[-4px] right-[-4px]" />
                   )}
                 </button>
                 <button
@@ -801,7 +825,7 @@ export default function App() {
                   <Trophy className="h-4 w-4" />
                   Sports
                   {activeTab === 'sports' && (
-                    <span className="bg-gradient-to-r from-red-600 to-amber-600 shadow-[0_0_12px_rgba(239,68,68,1)] h-0.5 rounded-full absolute bottom-[-21px] left-[-4px] right-[-4px]" />
+                    <span className="bg-gradient-to-r from-indigo-500 to-purple-600 shadow-[0_0_12px_rgba(99,102,241,1)] h-0.5 rounded-full absolute bottom-[-21px] left-[-4px] right-[-4px]" />
                   )}
                 </button>
                 <button
@@ -813,7 +837,7 @@ export default function App() {
                   <Newspaper className="h-4 w-4" />
                   News
                   {activeTab === 'news' && (
-                    <span className="bg-gradient-to-r from-red-600 to-amber-600 shadow-[0_0_12px_rgba(239,68,68,1)] h-0.5 rounded-full absolute bottom-[-21px] left-[-4px] right-[-4px]" />
+                    <span className="bg-gradient-to-r from-indigo-500 to-purple-600 shadow-[0_0_12px_rgba(99,102,241,1)] h-0.5 rounded-full absolute bottom-[-21px] left-[-4px] right-[-4px]" />
                   )}
                 </button>
               </nav>
@@ -869,9 +893,9 @@ export default function App() {
 
           {/* Show Search Results bar if active */}
           {searchQuery && (
-            <div className="bg-[#121212] py-2 px-6 border-b border-white/5 flex justify-between items-center text-xs">
+            <div className="bg-white/5 backdrop-blur-md py-2 px-6 border-b border-white/10 flex justify-between items-center text-xs relative z-10">
               <span className="text-slate-400">Resultados de búsqueda para: <strong className="text-white">"{searchQuery}"</strong> ({filteredChannels.length} encontrados)</span>
-              <button onClick={() => setSearchQuery('')} className="text-red-500 hover:underline flex items-center gap-1">
+              <button onClick={() => setSearchQuery('')} className="text-indigo-400 hover:underline flex items-center gap-1">
                 Limpiar <X className="h-3 w-3" />
               </button>
             </div>
@@ -895,9 +919,9 @@ export default function App() {
                       className="w-full h-full object-cover opacity-60 scale-105 transition-all duration-700 animate-fadeIn"
                     />
                     {/* Shadow Blends */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#070707] via-[#070707]/60 to-transparent" />
-                    <div className="absolute inset-0 bg-gradient-to-r from-[#070707] via-transparent to-[#070707]/30" />
-                    <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-black to-transparent opacity-90" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#020202] via-[#020202]/30 to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-[#020202] via-transparent to-[#020202]/20" />
+                    <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-black/20 to-transparent opacity-90" />
                   </div>
 
                   {/* Left content stack */}
@@ -1008,11 +1032,11 @@ export default function App() {
                 </section>
 
                 {/* 2. "Cata de Canales" Horizontal Scrolling Carousel overlay (Screen 2) */}
-                <section className="bg-gradient-to-b from-[#070707] to-[#0A0A0A] py-6 px-4 lg:px-8 border-b border-white/5">
+                <section className="bg-white/5 backdrop-blur-xl py-6 px-4 lg:px-8 border-b border-white/10 relative z-10 shadow-[0_4px_30px_rgba(0,0,0,0.2)]">
                   <div className="max-w-[1300px] mx-auto flex flex-col gap-3">
                     <div className="flex items-center justify-between">
-                      <h4 className="text-xs font-mono font-black tracking-widest text-[#a855f7] uppercase">Cata de Canales</h4>
-                      <span className="text-[10px] text-slate-500 font-mono">SINTONIZADOR DIRECTO</span>
+                      <h4 className="text-xs font-mono font-black tracking-widest text-indigo-400 uppercase">Cata de Canales</h4>
+                      <span className="text-[10px] text-slate-400 font-mono">SINTONIZADOR DIRECTO</span>
                     </div>
 
                     <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-none scroll-smooth">
@@ -1020,10 +1044,10 @@ export default function App() {
                         <button
                           key={channel.id}
                           onClick={() => { setSelectedChannel(channel); setActiveTab('live'); }}
-                          className={`flex-shrink-0 bg-[#0f1013]/70 backdrop-blur-md rounded-xl p-3 border hover:scale-105 transition-all flex flex-col items-center justify-center w-[120px] text-center cursor-pointer gap-2 group ${
+                          className={`flex-shrink-0 bg-white/5 backdrop-blur-md rounded-xl p-3 border hover:scale-105 transition-all flex flex-col items-center justify-center w-[120px] text-center cursor-pointer gap-2 group ${
                             selectedChannel?.id === channel.id 
-                              ? 'border-[#a855f7] bg-purple-950/10' 
-                              : 'border-white/5 hover:border-white/10'
+                              ? 'border-[#a855f7] bg-purple-500/10 shadow-[0_0_15px_rgba(168,85,247,0.3)] ring-1 ring-purple-500/30' 
+                              : 'border-white/10 hover:border-white/20 hover:bg-white/10'
                           }`}
                         >
                           <img 
@@ -1042,10 +1066,10 @@ export default function App() {
                 </section>
 
                 {/* 3. Featured VOD Section matching Screen 2 */}
-                <section className="py-8 px-4 lg:px-8 bg-[#0a0a0a]">
+                <section className="py-8 px-4 lg:px-8 bg-white/[0.02] backdrop-blur-lg border-b border-white/5 relative z-10">
                   <div className="max-w-[1300px] mx-auto flex flex-col gap-4">
                     <div className="flex items-center gap-2">
-                      <span className="h-4 w-1 bg-red-600 rounded-full" />
+                      <span className="h-4 w-1 bg-indigo-500 rounded-full" />
                       <h3 className="font-display font-black text-sm uppercase tracking-widest text-slate-200">Featured VOD</h3>
                     </div>
 
@@ -1054,7 +1078,7 @@ export default function App() {
                         <div
                           key={vod.id}
                           onClick={() => handleSintonizeSlideChannel(vod.channelId)}
-                          className="group relative aspect-[14/9] rounded-xl overflow-hidden cursor-pointer border border-white/5 hover:border-white/15 transition-all shadow-md bg-black"
+                          className="group relative aspect-[14/9] rounded-xl overflow-hidden cursor-pointer border border-white/10 backdrop-blur-md hover:border-white/25 hover:shadow-[0_8px_32px_rgba(0,0,0,0.5)] transition-all shadow-md bg-white/5"
                         >
                           {/* Image */}
                           <img 
@@ -1081,21 +1105,21 @@ export default function App() {
                 </section>
 
                 {/* 4. "Canales en Vivo" Main Filter and Card Grid (Screen 1 & 3) */}
-                <section className="py-8 px-4 lg:px-8 bg-gradient-to-b from-[#0a0a0a] to-[#060606] border-t border-white/5">
+                <section className="py-8 px-4 lg:px-8 bg-white/[0.01] backdrop-blur-md border-t border-white/10 relative z-10 animate-fadeIn">
                   <div className="max-w-[1300px] mx-auto flex flex-col gap-6">
                     
                     {/* Grid Section Head */}
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-white/5 pb-5 gap-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-white/10 pb-5 gap-4">
                       <div className="flex items-center gap-2">
                         {/* High contrast red vector bar marker */}
-                        <span className="h-5 w-1 bg-red-600 rounded-full shadow-[0_0_8px_rgba(239,68,68,0.8)]" />
+                        <span className="h-5 w-1 bg-indigo-500 rounded-full shadow-[0_0_8px_rgba(99,102,241,0.8)]" />
                         <h3 className="font-display font-black text-lg lg:text-xl text-white tracking-tight uppercase">
                           Canales en Vivo
                         </h3>
                       </div>
 
                       {/* Right side item metrics */}
-                      <span className="text-[11.5px] font-mono font-semibold text-slate-500 lowercase self-end sm:self-auto">
+                      <span className="text-[11.5px] font-mono font-semibold text-slate-400 lowercase self-end sm:self-auto">
                         {filteredChannels.length} channels
                       </span>
                     </div>
@@ -1136,10 +1160,10 @@ export default function App() {
                                 setIsPlaying(true);
                                 setActiveTab('live');
                               }}
-                              className={`group relative bg-gradient-to-b from-[#111317] to-[#0a0a0d] rounded-2xl p-4 border transition-all flex flex-col justify-between overflow-hidden select-none shadow-md h-40 ${
+                              className={`group relative bg-white/[0.04] backdrop-blur-md rounded-2xl p-4 border transition-all flex flex-col justify-between overflow-hidden select-none h-40 shadow-[0_8px_32px_rgba(0,0,0,0.3)] ${
                                 isCurrent 
-                                  ? 'border-red-600 shadow-[0_0_15px_rgba(220,38,38,0.15)] ring-1 ring-red-600/30' 
-                                  : 'border-white/5 hover:border-slate-800 hover:scale-[1.02] hover:shadow-lg'
+                                  ? 'border-indigo-500 shadow-[0_0_20px_rgba(99,102,241,0.3)] ring-1 ring-indigo-500/40 bg-indigo-500/5' 
+                                  : 'border-white/10 hover:border-white/25 hover:bg-white/10 hover:scale-[1.02] hover:shadow-[0_8px_32px_rgba(0,0,0,0.4)]'
                               }`}
                             >
                               {posterUrl && (
@@ -1191,31 +1215,31 @@ export default function App() {
                               {/* Bottom labels */}
                               <div className="flex items-end justify-between mt-auto z-10">
                                 <div className="min-w-0 w-4/5">
-                                  <h4 className={`text-xs font-black truncate tracking-wide group-hover:text-red-500 transition-colors ${
-                                    isCurrent ? 'text-red-500' : 'text-white'
+                                  <h4 className={`text-xs font-black truncate tracking-wide group-hover:text-indigo-400 transition-colors ${
+                                    isCurrent ? 'text-indigo-400' : 'text-white'
                                   }`}>
                                     {channel.n}
                                   </h4>
                                 </div>
                                 
                                 {/* Resolution Pill bottom right */}
-                                <span className="text-[8px] font-mono font-black px-1.5 py-0.5 bg-red-600/10 text-red-500 border border-red-500/10 rounded tracking-wider uppercase flex-shrink-0">
+                                <span className="text-[8px] font-mono font-black px-1.5 py-0.5 bg-indigo-600/10 text-indigo-400 border border-indigo-500/10 rounded tracking-wider uppercase flex-shrink-0">
                                   {channel.q || '1080P'}
                                 </span>
                               </div>
 
                               {/* Corner status glow dot */}
-                              <span className="absolute left-2.5 top-2.5 h-1 w-1 rounded-full animate-pulse bg-red-600 z-10" />
+                              <span className="absolute left-2.5 top-2.5 h-1 w-1 rounded-full animate-pulse bg-indigo-500 z-10" />
                               
                             </div>
                           );
                         })}
                       </div>
                     ) : (
-                      <div className="bg-[#121212]/30 rounded-2xl p-12 text-center border border-white/5">
-                        <Activity className="h-8 w-8 text-[#555] mx-auto mb-2" />
+                      <div className="bg-white/5 backdrop-blur-md rounded-2xl p-12 text-center border border-white/10">
+                        <Activity className="h-8 w-8 text-indigo-400/50 mx-auto mb-2" />
                         <h4 className="text-sm font-bold text-white">No se encontraron canales en esta categoría</h4>
-                        <p className="text-xs text-slate-500 mt-1">Intente resetear los filtros o modificar su búsqueda.</p>
+                        <p className="text-xs text-slate-400 mt-1">Intente resetear los filtros o modificar su búsqueda.</p>
                       </div>
                     )}
                   </div>
@@ -1237,7 +1261,7 @@ export default function App() {
                       {/* Active Player Wrapper frame */}
                       <div 
                         ref={playerWrapRef}
-                        className="relative bg-black rounded-2xl overflow-hidden border border-white/5 shadow-2xl group animate-fadeIn"
+                        className="relative bg-black/40 backdrop-blur-md rounded-2xl overflow-hidden border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)] group animate-fadeIn"
                       >
                         {/* video viewport element */}
                         <div className="aspect-video w-full relative flex items-center justify-center overflow-hidden">
@@ -1251,27 +1275,27 @@ export default function App() {
                           {/* Loading overlay spinner */}
                           {isLoading && (
                             <div className="absolute inset-0 bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center gap-3">
-                              <div className="h-9 w-9 border-4 border-t-red-600 border-r-transparent border-b-transparent border-l-transparent animate-spin rounded-full"></div>
-                              <span className="text-[10px] font-mono text-slate-500 tracking-widest uppercase">ENLAZANDO SEÑAL ...</span>
+                              <div className="h-9 w-9 border-4 border-t-indigo-500 border-r-transparent border-b-transparent border-l-transparent animate-spin rounded-full"></div>
+                              <span className="text-[10px] font-mono text-slate-400 tracking-widest uppercase">ENLAZANDO SEÑAL ...</span>
                             </div>
                           )}
 
                           {/* Player error bypass block code */}
                           {playerError && (
-                            <div className="absolute inset-0 bg-[#0c0c0d] backdrop-blur-sm flex flex-col items-center justify-center text-center p-6 gap-4 animate-scaleUp">
-                              <div className="h-12 w-12 rounded-full bg-red-600/10 border border-red-600/30 flex items-center justify-center">
-                                <Activity className="h-6 w-6 text-red-600" />
+                            <div className="absolute inset-0 bg-black/80 backdrop-blur-md flex flex-col items-center justify-center text-center p-6 gap-4 animate-scaleUp">
+                              <div className="h-12 w-12 rounded-full bg-indigo-600/10 border border-indigo-600/30 flex items-center justify-center">
+                                <Activity className="h-6 w-6 text-indigo-400" />
                               </div>
                               <div>
                                 <h4 className="text-sm font-bold font-display uppercase tracking-wider text-white">Canal Temporalmente Fuera de Servicio</h4>
-                                <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1 leading-relaxed">
+                                <p className="text-xs text-slate-400 max-w-sm mx-auto mt-1 leading-relaxed">
                                   La señal del streaming en vivo tiene restricciones de red. Intenta forzar reintentos de conexión o cambia de canal.
                                 </p>
                               </div>
                               <div className="flex items-center gap-2">
                                 <button 
                                   onClick={() => setSelectedChannel({ ...selectedChannel })}
-                                  className="flex items-center gap-1.5 px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-white/5 rounded-xl text-xs font-semibold text-white transition-all cursor-pointer"
+                                  className="flex items-center gap-1.5 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-semibold text-white transition-all cursor-pointer"
                                 >
                                   <RotateCcw className="h-3 w-3" /> Reintentar Carga
                                 </button>
@@ -1282,7 +1306,7 @@ export default function App() {
                                     const nextCh = allChannels[nextIdx];
                                     if (nextCh) setSelectedChannel(nextCh);
                                   }}
-                                  className="flex items-center gap-1.5 px-4 py-2 bg-red-600 hover:bg-red-500 rounded-xl text-xs font-bold text-white transition-all cursor-pointer shadow-lg shadow-red-600/20"
+                                  className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-xl text-xs font-bold text-white transition-all cursor-pointer shadow-lg shadow-indigo-600/20"
                                 >
                                   <SkipForward className="h-3 w-3" /> Siguiente Canal
                                 </button>
@@ -1292,21 +1316,21 @@ export default function App() {
 
                           {/* Top channel overlays indicators */}
                           <div className="absolute top-4 right-4 flex items-center gap-2">
-                            <span className="flex items-center gap-1 px-2.5 py-1 text-[9px] font-mono font-black tracking-widest rounded bg-red-600/80 text-white uppercase animate-pulse">
+                            <span className="flex items-center gap-1 px-2.5 py-1 text-[9px] font-mono font-black tracking-widest rounded bg-indigo-600/80 text-white uppercase animate-pulse">
                               Live Feed
                             </span>
-                            <span className="px-2.5 py-1 text-[10px] font-mono rounded bg-black/60 backdrop-blur-md text-slate-300 border border-white/5">
+                            <span className="px-2.5 py-1 text-[10px] font-mono rounded bg-white/5 backdrop-blur-md text-slate-300 border border-white/10">
                               {selectedChannel.q}
                             </span>
                           </div>
                         </div>
 
                         {/* Control actions bar (Exactly styled) */}
-                        <div className="bg-[#0f1013] border-t border-white/5 px-4 py-3.5 flex flex-wrap items-center justify-between gap-3 select-none">
+                        <div className="bg-white/5 backdrop-blur-md border-t border-white/10 px-4 py-3.5 flex flex-wrap items-center justify-between gap-3 select-none">
                           <div className="flex items-center gap-4">
                             <button
                               onClick={togglePlayPause}
-                              className="h-8 w-8 rounded-lg bg-red-600/15 hover:bg-red-600/25 text-red-500 flex items-center justify-center transition-colors cursor-pointer"
+                              className="h-8 w-8 rounded-lg bg-indigo-600/15 hover:bg-indigo-600/25 text-indigo-400 flex items-center justify-center transition-colors cursor-pointer"
                               title={isPlaying ? 'Pausar' : 'Reproducir'}
                             >
                               {isPlaying ? <Pause className="h-4.5 w-4.5 fill-current" /> : <Play className="h-4.5 w-4.5 fill-current" />}
@@ -1316,7 +1340,7 @@ export default function App() {
                             <div className="flex items-center gap-2">
                               <button
                                 onClick={toggleMute}
-                                className="h-8 w-8 rounded-lg bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-white transition-colors cursor-pointer"
+                                className="h-8 w-8 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-colors cursor-pointer"
                               >
                                 {isMuted || volume === 0 ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
                               </button>
@@ -1326,7 +1350,7 @@ export default function App() {
                                 max="100"
                                 value={isMuted ? 0 : volume}
                                 onChange={(e) => handleVolumeChange(Number(e.target.value))}
-                                className="w-16 lg:w-20 h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-red-600"
+                                className="w-16 lg:w-20 h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-indigo-500"
                               />
                             </div>
                           </div>
@@ -1341,12 +1365,12 @@ export default function App() {
                           </div>
 
                           <div className="flex items-center gap-2">
-                            <span className="text-[9px] bg-[#10b981]/15 text-[#10b981] border border-[#10b981]/20 px-2.5 py-0.5 rounded font-mono font-bold">
+                            <span className="text-[9px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-0.5 rounded font-mono font-bold">
                               CDN SYNC
                             </span>
                             <button
                               onClick={toggleFullscreen}
-                              className="h-8 w-8 rounded-lg bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-white transition-colors cursor-pointer"
+                              className="h-8 w-8 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-colors cursor-pointer"
                             >
                               <Maximize className="h-4 w-4" />
                             </button>
@@ -1356,7 +1380,7 @@ export default function App() {
                       </div>
 
                       {/* Enriched TMDB Movie Metadata detail */}
-                      <div className="bg-[#0f1013] rounded-2xl p-5 border border-white/5 relative overflow-hidden text-left shadow-lg">
+                      <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-5 border border-white/10 relative overflow-hidden text-left shadow-[0_8px_32px_rgba(0,0,0,0.3)]">
                         
                         {enrichedMetadata?.backdrop && (
                           <div 
@@ -1371,20 +1395,20 @@ export default function App() {
                             <img 
                               src={enrichedMetadata.poster} 
                               alt="" 
-                              className="w-20 sm:w-24 aspect-[2/3] object-cover rounded-xl border border-white/5 shadow-md self-start"
+                              className="w-20 sm:w-24 aspect-[2/3] object-cover rounded-xl border border-white/10 shadow-md self-start"
                             />
                           )}
 
                           <div className="flex-1 flex flex-col justify-center gap-2">
                             <div className="flex items-center flex-wrap gap-2">
-                              <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-red-600/10 text-red-500 border border-red-500/10">
+                              <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-indigo-650/20 text-[#818cf8] border border-indigo-500/25">
                                 {enrichedMetadata?.type ? enrichedMetadata.type : selectedChannel.c}
                               </span>
                               {enrichedMetadata?.year && (
                                 <span className="text-xs text-slate-400 font-mono">Año: {enrichedMetadata.year}</span>
                               )}
                               {enrichedMetadata?.rating && (
-                                <span className="text-xs text-amber-500 font-semibold flex items-center gap-1 bg-amber-500/5 px-2 py-0.5 rounded border border-amber-500/10">
+                                <span className="text-xs text-amber-550 font-semibold flex items-center gap-1 bg-amber-500/5 px-2 py-0.5 rounded border border-amber-500/10">
                                   ⭐️ {enrichedMetadata.rating.toFixed(1)}/10
                                 </span>
                               )}
@@ -1394,12 +1418,12 @@ export default function App() {
                               {enrichedMetadata?.title ? enrichedMetadata.title : `Sintonizando: ${selectedChannel.n}`}
                             </h3>
 
-                            <p className="text-xs sm:text-sm text-slate-400 leading-relaxed max-w-2xl">
+                            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-2xl">
                               {enrichedMetadata?.overview ? enrichedMetadata.overview : selectedChannel.d}
                             </p>
 
-                            <div className="mt-2 flex flex-wrap items-center gap-4 border-t border-white/5 pt-3">
-                              <span className="text-[10px] text-slate-600 font-mono uppercase font-bold flex items-center gap-1">
+                            <div className="mt-2 flex flex-wrap items-center gap-4 border-t border-white/10 pt-3">
+                              <span className="text-[10px] text-slate-400 font-mono uppercase font-bold flex items-center gap-1">
                                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
                                 SATÉLITE CORE: {enrichedMetadata?.source ? enrichedMetadata.source.toUpperCase() : 'CANAL IPTV CONFIG'}
                               </span>
@@ -1407,7 +1431,7 @@ export default function App() {
                               <button
                                 onClick={() => selectedChannel && predictWithAI(selectedChannel)}
                                 disabled={isPredicting || metadataLoading}
-                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-500 disabled:opacity-55 text-white text-[9.5px] uppercase font-black tracking-wider transition-all cursor-pointer"
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-55 text-white text-[9.5px] uppercase font-black tracking-wider transition-all cursor-pointer shadow-lg shadow-indigo-600/20"
                               >
                                 <Sparkles className="h-3.5 w-3.5 animate-pulse text-yellow-300" />
                                 {isPredicting ? 'Escaneando Video...' : '🔮 Recalcular con IA'}
@@ -1420,20 +1444,20 @@ export default function App() {
 
                     </div>
                   ) : (
-                    <div className="bg-[#121212]/30 rounded-2xl p-12 text-center border border-white/5 flex flex-col items-center gap-4">
-                      <Tv className="h-12 w-12 text-[#444]" />
+                    <div className="bg-white/5 backdrop-blur-md rounded-2xl p-12 text-center border border-white/10 flex flex-col items-center gap-4">
+                      <Tv className="h-12 w-12 text-indigo-400/50" />
                       <div>
                         <h3 className="text-sm font-bold uppercase tracking-wider text-white">Canal no detectado</h3>
-                        <p className="text-xs text-slate-500 mt-1">Selecciona cualquier canal para comenzar a reproducir.</p>
+                        <p className="text-xs text-slate-400 mt-1">Selecciona cualquier canal para comenzar a reproducir.</p>
                       </div>
                     </div>
                   )}
 
                   {/* Active Grid Filter selector listed below Player for Live page */}
                   <div className="flex flex-col gap-4 mt-2">
-                    <div className="flex items-center justify-between border-b border-white/5 pb-3">
+                    <div className="flex items-center justify-between border-b border-white/10 pb-3">
                       <h4 className="text-sm font-display font-black text-white uppercase tracking-wider">Otros Canales</h4>
-                      <span className="text-xs text-slate-500">{filteredChannels.length} disponibles</span>
+                      <span className="text-xs text-slate-400">{filteredChannels.length} disponibles</span>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -1443,18 +1467,18 @@ export default function App() {
                           <div
                             key={channel.id}
                             onClick={() => { setSelectedChannel(channel); setIsPlaying(true); }}
-                            className={`group relative bg-[#0f1013] hover:bg-[#14161a] p-2.5 rounded-xl border flex items-center gap-3 cursor-pointer transition-all select-none ${
+                            className={`group relative bg-white/5 backdrop-blur-md p-2.5 rounded-xl border flex items-center gap-3 cursor-pointer transition-all select-none ${
                               isCurrent 
-                                ? 'border-red-600 bg-red-950/5' 
-                                : 'border-white/5 hover:border-white/10'
+                                ? 'border-indigo-500 bg-indigo-500/15 shadow-[0_0_15px_rgba(99,102,241,0.25)]' 
+                                : 'border-white/10 hover:border-white/20 hover:bg-white/10'
                             }`}
                           >
                             <img src={channel.logo} alt="" className="h-7 object-contain flex-shrink-0" />
                             <div className="text-left min-w-0 flex-1">
-                              <h5 className={`text-xs font-bold truncate group-hover:text-red-500 transition-colors ${
-                                isCurrent ? 'text-red-500' : 'text-white'
+                              <h5 className={`text-xs font-bold truncate group-hover:text-indigo-400 transition-colors ${
+                                isCurrent ? 'text-indigo-400' : 'text-white'
                               }`}>{channel.n}</h5>
-                              <span className="block text-[9px] text-slate-500 uppercase">{channel.c}</span>
+                              <span className="block text-[9px] text-slate-400 uppercase">{channel.c}</span>
                             </div>
                           </div>
                         );
@@ -1468,20 +1492,20 @@ export default function App() {
                 <div className="flex flex-col gap-5">
                   
                   {/* AI Chat Widget */}
-                  <div className="bg-[#0f1013] rounded-2xl border border-white/5 flex flex-col h-[520px] shadow-2xl overflow-hidden relative">
+                  <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 flex flex-col h-[520px] shadow-[0_8px_32px_rgba(0,0,0,0.35)] overflow-hidden relative">
                     
                     {/* Head */}
-                    <div className="p-4 bg-white/[0.02] border-b border-white/5 flex items-center justify-between">
+                    <div className="p-4 bg-white/5 border-b border-white/10 flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <div className="h-7 w-7 rounded-lg bg-gradient-to-tr from-red-600 to-amber-600 flex items-center justify-center shadow-lg">
+                        <div className="h-7 w-7 rounded-lg bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg">
                           <Sparkles className="h-4 w-4 text-white animate-pulse" />
                         </div>
                         <div className="text-left">
                           <h4 className="text-[11.5px] font-black uppercase tracking-wider text-white">Edge Vision IA</h4>
-                          <span className="block text-[8px] font-mono text-emerald-500 font-bold tracking-tight uppercase">Satellite active</span>
+                          <span className="block text-[8px] font-mono text-emerald-400 font-bold tracking-tight uppercase">Satellite active</span>
                         </div>
                       </div>
-                      <span className="text-[9px] text-slate-400 bg-white/5 px-2 py-0.5 rounded font-mono font-medium uppercase">Gemini 3.5</span>
+                      <span className="text-[9px] text-indigo-300 bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 rounded font-mono font-medium uppercase">Gemini 3.5</span>
                     </div>
 
                     {/* Chat Messages */}
@@ -1498,12 +1522,12 @@ export default function App() {
                           >
                             <div className={`p-3 rounded-2xl text-xs leading-relaxed ${
                               isAssistant 
-                                ? 'bg-white/5 text-[#f1f5f9] rounded-tl-none border border-white/5' 
-                                : 'bg-red-600 text-white rounded-tr-none shadow-md shadow-red-600/10'
+                                ? 'bg-white/5 text-[#f1f5f9] rounded-tl-none border border-white/10' 
+                                : 'bg-indigo-600 text-white rounded-tr-none shadow-md shadow-indigo-600/10'
                             }`}>
                               {msg.text}
                             </div>
-                            <span className="text-[8px] text-slate-600 mt-1 font-mono self-end">
+                            <span className="text-[8px] text-slate-400 mt-1 font-mono self-end">
                               {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </span>
                           </div>
@@ -1511,10 +1535,10 @@ export default function App() {
                       })}
 
                       {isAiLoading && (
-                        <div className="self-start flex items-center gap-2 text-[10px] font-mono text-slate-500 bg-white/5 py-2 px-3 rounded-lg border border-white/5 animate-pulse">
-                          <div className="h-1.5 w-1.5 bg-red-600 rounded-full animate-bounce" />
-                          <div className="h-1.5 w-1.5 bg-amber-500 rounded-full animate-bounce [animation-delay:0.2s]" />
-                          <div className="h-1.5 w-1.5 bg-yellow-500 rounded-full animate-bounce [animation-delay:0.4s]" />
+                        <div className="self-start flex items-center gap-2 text-[10px] font-mono text-slate-400 bg-white/5 py-2 px-3 rounded-lg border border-white/10 animate-pulse">
+                          <div className="h-1.5 w-1.5 bg-indigo-500 rounded-full animate-bounce" />
+                          <div className="h-1.5 w-1.5 bg-purple-500 rounded-full animate-bounce [animation-delay:0.2s]" />
+                          <div className="h-1.5 w-1.5 bg-pink-500 rounded-full animate-bounce [animation-delay:0.4s]" />
                           <span>Analizando stream con IA...</span>
                         </div>
                       )}
@@ -1523,7 +1547,7 @@ export default function App() {
                     {/* Chat Form Submission */}
                     <form 
                       onSubmit={handleSendChat}
-                      className="p-3 bg-white/[0.01] border-t border-white/5 flex items-center gap-2"
+                      className="p-3 bg-white/5 border-t border-white/10 flex items-center gap-2"
                     >
                       <input
                         type="text"
@@ -1531,12 +1555,12 @@ export default function App() {
                         value={chatInput}
                         onChange={(e) => setChatInput(e.target.value)}
                         disabled={isAiLoading}
-                        className="flex-1 bg-black/60 border border-white/5 focus:border-red-600/50 focus:outline-none focus:ring-1 focus:ring-red-600/50 text-xs py-2 px-3 rounded-xl text-white transition-all placeholder-slate-600 disabled:opacity-50"
+                        className="flex-1 bg-black/40 border border-white/10 focus:border-indigo-550 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-xs py-2 px-3 rounded-xl text-white transition-all placeholder-slate-500 disabled:opacity-50"
                       />
                       <button
                         type="submit"
                         disabled={!chatInput.trim() || isAiLoading}
-                        className="h-8 w-8 rounded-xl bg-red-600 hover:bg-red-500 disabled:bg-slate-800 text-white disabled:text-slate-500 flex items-center justify-center transition-colors cursor-pointer"
+                        className="h-8 w-8 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-850 text-white disabled:text-slate-500 flex items-center justify-center transition-colors cursor-pointer"
                       >
                         <Send className="h-3.5 w-3.5 fill-current" />
                       </button>
@@ -1547,7 +1571,7 @@ export default function App() {
                   {historyList.length > 0 && (
                     <div className="flex flex-col gap-3 text-left">
                       <div className="flex items-center gap-2">
-                        <Clock className="h-3.5 w-3.5 text-red-500" />
+                        <Clock className="h-3.5 w-3.5 text-indigo-400" />
                         <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Sintonizados recientemente</h4>
                       </div>
                       <div className="flex flex-col gap-2">
@@ -1555,12 +1579,12 @@ export default function App() {
                           <button
                             key={channel.id}
                             onClick={() => setSelectedChannel(channel)}
-                            className="flex items-center gap-3 bg-[#0f1013] hover:bg-slate-800/40 p-2.5 rounded-xl border border-white/5 cursor-pointer text-left transition-all group"
+                            className="flex items-center gap-3 bg-white/5 backdrop-blur-md hover:bg-white/10 p-2.5 rounded-xl border border-white/10 cursor-pointer text-left transition-all group"
                           >
                             <img src={channel.logo} alt="" className="h-6 object-contain flex-shrink-0" />
                             <div className="overflow-hidden min-w-0">
-                              <h5 className="text-[11.5px] font-bold text-white truncate group-hover:text-red-500 transition-colors">{channel.n}</h5>
-                              <span className="block text-[8.5px] text-slate-500 capitalize">{channel.c}</span>
+                              <h5 className="text-[11.5px] font-bold text-white truncate group-hover:text-indigo-400 transition-colors">{channel.n}</h5>
+                              <span className="block text-[8.5px] text-slate-400 capitalize">{channel.c}</span>
                             </div>
                           </button>
                         ))}
@@ -1576,8 +1600,8 @@ export default function App() {
           </div>
 
           {/* Premium Footer */}
-          <footer className="mt-auto border-t border-white/5 bg-black py-5 px-6">
-            <div className="max-w-[1300px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
+          <footer className="mt-auto border-t border-white/10 bg-black/60 backdrop-blur-md py-5 px-6 relative z-10">
+            <div className="max-w-[1300px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400 font-medium">
               <div className="flex items-center gap-2 font-display">
                 <span className="font-extrabold text-white tracking-widest uppercase">EDGE IPTV</span>
                 <span>&mdash;</span>
