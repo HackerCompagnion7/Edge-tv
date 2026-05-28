@@ -12,27 +12,27 @@ import { IPTVChannel, IPTVCategory, ChatMessage, NowPlayingMetadata } from './ty
 import guideData from './channels.json';
 
 const CHANNEL_BACKDROPS: Record<number, string> = {
-  1: "/src/assets/images/cine_adrenalina_hero_1779928780435.png",
-  2: "/src/assets/images/cine_comedia_hero_1779928823672.png",
-  3: "/src/assets/images/cine_terror_hero_1779928757525.png",
-  4: "/src/assets/images/cine_premiere_hero_1779928803684.png",
-  5: "/src/assets/images/movie_category_poster_1779929761270.png",
-  6: "/src/assets/images/movie_category_poster_1779929761270.png",
-  7: "/src/assets/images/movie_category_poster_1779929761270.png",
-  8: "/src/assets/images/cine_adrenalina_hero_1779928780435.png",
-  9: "/src/assets/images/movie_category_poster_1779929761270.png",
+  1: "/assets/images/cine_adrenalina_hero_1779928780435.png",
+  2: "/assets/images/cine_comedia_hero_1779928823672.png",
+  3: "/assets/images/cine_terror_hero_1779928757525.png",
+  4: "/assets/images/cine_premiere_hero_1779928803684.png",
+  5: "/assets/images/movie_category_poster_1779929761270.png",
+  6: "/assets/images/movie_category_poster_1779929761270.png",
+  7: "/assets/images/movie_category_poster_1779929761270.png",
+  8: "/assets/images/cine_adrenalina_hero_1779928780435.png",
+  9: "/assets/images/movie_category_poster_1779929761270.png",
   10: "https://image.tmdb.org/t/p/w780/i7nS7R6K7rL1dZg3S9V9jT6p6R1E.jpg",
-  11: "/src/assets/images/movie_category_poster_1779929761270.png",
-  12: "/src/assets/images/movie_category_poster_1779929761270.png",
-  13: "/src/assets/images/cine_terror_hero_1779928757525.png",
-  20: "/src/assets/images/movie_category_poster_1779929761270.png",
-  21: "/src/assets/images/movie_category_poster_1779929761270.png",
-  23: "/src/assets/images/movie_category_poster_1779929761270.png",
-  25: "/src/assets/images/movie_category_poster_1779929761270.png", // Movies Action
-  26: "/src/assets/images/cine_terror_hero_1779928757525.png", // Movies Thriller
-  30: "/src/assets/images/movie_category_poster_1779929761270.png", // Runtime Espanol
-  32: "/src/assets/images/movie_category_poster_1779929761270.png", // Classic Movies
-  34: "/src/assets/images/movie_category_poster_1779929761270.png", // Paramount Movie Channel
+  11: "/assets/images/movie_category_poster_1779929761270.png",
+  12: "/assets/images/movie_category_poster_1779929761270.png",
+  13: "/assets/images/cine_terror_hero_1779928757525.png",
+  20: "/assets/images/movie_category_poster_1779929761270.png",
+  21: "/assets/images/movie_category_poster_1779929761270.png",
+  23: "/assets/images/movie_category_poster_1779929761270.png",
+  25: "/assets/images/movie_category_poster_1779929761270.png", // Movies Action
+  26: "/assets/images/cine_terror_hero_1779928757525.png", // Movies Thriller
+  30: "/assets/images/movie_category_poster_1779929761270.png", // Runtime Espanol
+  32: "/assets/images/movie_category_poster_1779929761270.png", // Classic Movies
+  34: "/assets/images/movie_category_poster_1779929761270.png", // Paramount Movie Channel
 };
 
 export default function App() {
@@ -128,7 +128,7 @@ export default function App() {
       channelId: 3, // Cine terror
       title: "Cine terror",
       tagline: "NOW STREAMING",
-      backdrop: "/src/assets/images/cine_terror_hero_1779928757525.png",
+      backdrop: "/assets/images/cine_terror_hero_1779928757525.png",
       category: "Peliculas",
       genres: ["Peliculas", "Movies", "Terror"],
       overview: "Siente el verdadero horror en alta definición las 24 horas. Disfruta hoy de los éxitos más aterradores del cine moderno con un enlace directo satelital.",
@@ -139,7 +139,7 @@ export default function App() {
       channelId: 1, // Cine adrenalina
       title: "Cine adrenalina",
       tagline: "SIEMPRE EN VIVO",
-      backdrop: "/src/assets/images/cine_adrenalina_hero_1779928780435.png",
+      backdrop: "/assets/images/cine_adrenalina_hero_1779928780435.png",
       category: "Peliculas",
       genres: ["Adrenalina", "Accion", "Peliculas"],
       overview: "Programación repleta de acción ininterrumpida. John Wick, Gladiador, Duro de Matar y los grandes éxitos de adrenalina pura están aquí con audio premium.",
@@ -150,7 +150,7 @@ export default function App() {
       channelId: 4, // Cine Premiere
       title: "Cine Premiere",
       tagline: "ESTRENOS PREMIUM",
-      backdrop: "/src/assets/images/cine_premiere_hero_1779928803684.png",
+      backdrop: "/assets/images/cine_premiere_hero_1779928803684.png",
       category: "Peliculas",
       genres: ["Estrenos", "Premiere", "HD"],
       overview: "Sintoniza los estrenos y las películas más taquilleras del cine premium mundial. La mejor resolución de video para tus ojos las 24 horas del día.",
@@ -161,7 +161,7 @@ export default function App() {
       channelId: 2, // Cine comedia
       title: "Cine comedia",
       tagline: "SIEMPRE EN VIVO",
-      backdrop: "/src/assets/images/cine_comedia_hero_1779928823672.png",
+      backdrop: "/assets/images/cine_comedia_hero_1779928823672.png",
       category: "Peliculas",
       genres: ["Comedia", "Risas", "Peliculas"],
       overview: "Ríete a más no poder con las comedias más virales y los clásicos divertidos que marcaron época. Programación ligera para disfrutar en familia.",
@@ -172,7 +172,7 @@ export default function App() {
       channelId: 6, // Cine Clásico
       title: "Cine Premium",
       tagline: "CATEGORÍA PELÍCULAS",
-      backdrop: "/src/assets/images/movie_category_poster_1779929761270.png",
+      backdrop: "/assets/images/movie_category_poster_1779929761270.png",
       category: "Peliculas",
       genres: ["Peliculas", "Movies", "Premium"],
       overview: "Descubre la máxima expresión del arte cinematográfico. Las mejores películas, clásicos de Hollywood y grandes joyas galardonadas en alta definición y con una iluminación espectacular.",
@@ -186,7 +186,7 @@ export default function App() {
       id: "vod-batman",
       title: "Cine Premiere: The Batman",
       theme: "The Batman",
-      backdrop: "/src/assets/images/cine_premiere_hero_1779928803684.png",
+      backdrop: "/assets/images/cine_premiere_hero_1779928803684.png",
       channelId: 4, // Cine Premiere
       category: "CINE",
       overview: "En su segundo año luchando contra el crimen..."
